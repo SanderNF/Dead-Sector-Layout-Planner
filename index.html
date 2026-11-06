@@ -1,0 +1,1280 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Rack power layout</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@400;500;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#dfe4e7; --panel:#f6f8f9; --ink:#15202b; --muted:#5d6b77; --line:#c8d0d6; --hover:#e6ebee;
+  --floor:#e9eef0; --tile:#d6dde1; --tile-q:#e1e7ea; --void:#cfd6db;
+  --power:#d98a00; --data:#0a7ea4; --sel:#6741d9; --warn:#c92a2a; --ok:#2f8f46; --part:#c77700;
+  --rack:#33424f; --rack-fill:#f3f5f7;
+  --pdu:#b35c00; --pdu-fill:#fdf1e2;
+  --ups:#2f7d43; --ups-fill:#e7f3ea;
+  --cooler:#127f93; --cooler-fill:#e2f3f6;
+  --switch:#3b5bb5; --switch-fill:#e8edf9;
+  --head-ink:#ffffff;
+  color-scheme:light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f1419; --panel:#161d24; --ink:#e4eaef; --muted:#93a1ad; --line:#2a343e; --hover:#202a33;
+    --floor:#1a222a; --tile:#2a343e; --tile-q:#212a33; --void:#11171d;
+    --power:#f2a922; --data:#3cb4dc; --sel:#9b82f5; --warn:#ff6b6b; --ok:#5cc278; --part:#f0a33a;
+    --rack:#9fb0bf; --rack-fill:#1e2730;
+    --pdu:#e08a2e; --pdu-fill:#2b2118;
+    --ups:#55b56d; --ups-fill:#17271c;
+    --cooler:#3fb3c8; --cooler-fill:#13262a;
+    --switch:#7f9ae8; --switch-fill:#1a2136;
+    --head-ink:#0f1419;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0f1419; --panel:#161d24; --ink:#e4eaef; --muted:#93a1ad; --line:#2a343e; --hover:#202a33;
+  --floor:#1a222a; --tile:#2a343e; --tile-q:#212a33; --void:#11171d;
+  --power:#f2a922; --data:#3cb4dc; --sel:#9b82f5; --warn:#ff6b6b; --ok:#5cc278; --part:#f0a33a;
+  --rack:#9fb0bf; --rack-fill:#1e2730;
+  --pdu:#e08a2e; --pdu-fill:#2b2118;
+  --ups:#55b56d; --ups-fill:#17271c;
+  --cooler:#3fb3c8; --cooler-fill:#13262a;
+  --switch:#7f9ae8; --switch-fill:#1a2136;
+  --head-ink:#0f1419;
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:15px/1.45 "Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;font-variant-numeric:tabular-nums}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--sel);outline-offset:2px}
+.app{display:grid;grid-template-rows:auto 1fr;height:100%}
+header{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:8px 12px;background:var(--panel);border-bottom:1px solid var(--line)}
+.brand{font-family:"Barlow Semi Condensed",sans-serif;font-weight:700;font-size:19px;letter-spacing:-.01em;margin-right:6px;white-space:nowrap}
+.grp{display:flex;gap:2px;padding:2px;border:1px solid var(--line);border-radius:9px;background:var(--bg)}
+.tb{appearance:none;border:0;background:transparent;padding:6px 9px;border-radius:7px;display:flex;align-items:center;gap:7px;cursor:pointer;white-space:nowrap;font-family:"Barlow Semi Condensed",sans-serif;font-weight:500;font-size:15px}
+.tb:hover{background:var(--hover)}
+.tb.on{background:var(--ink);color:var(--panel)}
+.tb:disabled{opacity:.4;cursor:default}
+.tb .k{font-size:12px;opacity:.55}
+.sw{display:inline-block;border:1.5px solid currentColor;border-radius:2px;flex:none}
+.sw.line{width:16px;height:0;border-width:2px 0 0;border-radius:0}
+.main{display:grid;grid-template-columns:minmax(0,1fr) 370px;min-height:0}
+.work{display:grid;grid-template-rows:minmax(0,1fr) auto;min-width:0;min-height:0}
+.results{max-height:40vh;overflow:auto;background:var(--panel);border-top:1px solid var(--line);padding:10px 14px 12px}
+.results h2{font-family:"Barlow Semi Condensed",sans-serif;font-size:18px;font-weight:700;margin:0 0 6px;display:flex;align-items:baseline;gap:8px}
+.results h2 small{font-family:"Barlow",sans-serif;font-weight:500;font-size:13px;color:var(--muted)}
+.rt{min-width:720px}
+.rt th,.rt td{white-space:nowrap}
+.rt th.g{text-align:center;color:var(--ink);border-bottom:1px solid var(--line)}
+.rt .sep{border-left:1px solid var(--line)}
+.rt td.kw{font-size:15px}
+.rt tfoot td{font-weight:700;border-bottom:0;border-top:2px solid var(--line)}
+.rt td.fd{font-size:13px;color:var(--muted);text-align:left}
+.stage{position:relative;min-width:0;min-height:0;overflow:hidden;background:var(--void)}
+#cv{width:100%;height:100%;display:block;touch-action:none;user-select:none;-webkit-user-select:none}
+#cv *{vector-effect:non-scaling-stroke}
+#cv.panning{cursor:grabbing}
+#cv.m-place,#cv.m-cable{cursor:crosshair}
+.hint{position:absolute;left:12px;bottom:12px;right:120px;pointer-events:none;font-size:14px;color:var(--muted)}
+.hint span{background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:5px 9px;display:inline-block;max-width:100%}
+.zoom{position:absolute;right:12px;bottom:12px;display:flex;gap:2px;padding:2px;border:1px solid var(--line);border-radius:9px;background:var(--panel)}
+.toast{position:absolute;left:50%;top:12px;transform:translateX(-50%);background:var(--ink);color:var(--panel);padding:7px 12px;border-radius:8px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90%}
+.toast.show{opacity:1}
+aside{background:var(--panel);border-left:1px solid var(--line);overflow-y:auto;min-height:0}
+aside section{padding:14px 16px 16px;border-bottom:1px solid var(--line)}
+aside h2{font-family:"Barlow Semi Condensed",sans-serif;font-size:18px;font-weight:700;margin:0 0 8px;letter-spacing:-.005em;display:flex;align-items:baseline;gap:8px}
+aside h2 small{font-family:"Barlow",sans-serif;font-weight:500;font-size:13px;color:var(--muted)}
+.muted{color:var(--muted)}
+.note{font-size:13.5px;color:var(--muted);margin:8px 0 0}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{font-family:"Barlow Semi Condensed",sans-serif;font-weight:600;text-align:right;color:var(--muted);padding:4px 6px;border-bottom:1px solid var(--line);font-size:14px}
+th:first-child,td:first-child{text-align:left;padding-left:0}
+td{padding:6px;text-align:right;border-bottom:1px solid var(--line);vertical-align:top}
+tr[data-rack]{cursor:pointer}
+tr[data-rack]:hover td,tr.cur td{background:var(--hover)}
+td .nm{font-family:"Barlow Semi Condensed",sans-serif;font-weight:600;font-size:15px}
+td .fd{font-size:12.5px;color:var(--muted);line-height:1.3}
+.kw{font-family:"Barlow Semi Condensed",sans-serif;font-weight:600;font-size:16px}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:1px}
+.st-ok{background:var(--ok)}.st-part{background:var(--part)}.st-none{background:var(--warn)}.st-off{background:var(--muted)}
+.c-none{color:var(--warn)}
+.even{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px}
+.even div{border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.even b{display:block;font-family:"Barlow Semi Condensed",sans-serif;font-size:24px;line-height:1.1}
+.even span{font-size:13px;color:var(--muted)}
+ul.plain{list-style:none;margin:0;padding:0}
+ul.plain li{padding:6px 0;border-bottom:1px solid var(--line);font-size:14px}
+ul.plain li:last-child{border-bottom:0}
+.iss li{display:flex;gap:8px;align-items:flex-start}
+.iss .ic{flex:none;width:8px;height:8px;border-radius:50%;margin-top:6px}
+.iss .err .ic{background:var(--warn)}.iss .warn .ic{background:var(--part)}.iss .info .ic{background:var(--muted)}
+.iss li[data-cable]{cursor:pointer}
+.rsel{width:100%;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);margin-bottom:10px}
+.form{display:grid;grid-template-columns:1fr 92px;gap:8px 10px;align-items:center;font-size:14px}
+.form input,.prop input,.prop select{width:100%;padding:5px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg)}
+.prop{display:grid;grid-template-columns:80px 1fr;gap:8px 10px;align-items:center;font-size:14px}
+.btns{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.btn{appearance:none;border:1px solid var(--line);background:var(--bg);border-radius:7px;padding:5px 11px;cursor:pointer;font-size:14px}
+.btn:hover{background:var(--hover)}
+.btn.danger{color:var(--warn)}
+details summary{cursor:pointer;font-family:"Barlow Semi Condensed",sans-serif;font-weight:700;font-size:18px}
+details p{font-size:14px;margin:8px 0}
+dialog{border:1px solid var(--line);border-radius:12px;background:var(--panel);color:var(--ink);padding:16px;width:min(640px,92vw)}
+dialog::backdrop{background:rgb(0 0 0 / .35)}
+dialog textarea{width:100%;height:300px;font:12.5px/1.4 ui-monospace,Menlo,Consolas,monospace;border:1px solid var(--line);border-radius:8px;background:var(--bg);padding:8px}
+dialog h3{margin:0 0 8px;font-family:"Barlow Semi Condensed",sans-serif;font-size:20px}
+
+/* SVG */
+.floor{fill:var(--floor)}
+.gq{stroke:var(--tile-q);stroke-width:1;fill:none}
+.gm{stroke:var(--tile);stroke-width:1;fill:none}
+#cv.far .gq{display:none}
+#cv.vfar .gm{display:none}
+.g10{stroke:var(--line);stroke-width:1.25;fill:none}
+.blk .body{stroke-width:1.5}
+.blk .head{stroke:none}
+.blk text{font-family:"Barlow Semi Condensed",sans-serif;text-anchor:middle;dominant-baseline:central;fill:var(--ink);pointer-events:none}
+.blk text.nm{font-weight:700;fill:var(--head-ink)}
+.blk text.v{font-weight:600}
+.blk text.neg{fill:var(--warn)}
+.blk.sel .body{stroke:var(--sel);stroke-width:3}
+.blk .body{fill:var(--rack-fill);stroke:var(--muted)} .blk .head{fill:var(--muted)}
+.blk.cc .body{stroke:var(--dc);fill:color-mix(in srgb,var(--dc) 12%,var(--panel))} .blk.cc .head{fill:var(--dc)}
+.t-rack .body{fill:var(--rack-fill);stroke:var(--rack)} .t-rack .head{fill:var(--rack)}
+.t-pdu .body{fill:var(--pdu-fill);stroke:var(--pdu)} .t-pdu .head{fill:var(--pdu)}
+.t-ups .body{fill:var(--ups-fill);stroke:var(--ups)} .t-ups .head{fill:var(--ups)}
+.t-cooler .body{fill:var(--cooler-fill);stroke:var(--cooler)} .t-cooler .head{fill:var(--cooler)}
+.t-switch .body{fill:var(--switch-fill);stroke:var(--switch)} .t-switch .head{fill:var(--switch)}
+.blk.badchain .body{stroke:var(--warn);stroke-width:2.5}
+.sdot{stroke:var(--head-ink);stroke-width:1}
+.sdot.st-ok{fill:var(--ok)}.sdot.st-part{fill:var(--part)}.sdot.st-none{fill:var(--warn)}.sdot.st-off{fill:var(--muted)}
+.cable{fill:none;stroke-width:2.5;stroke-linejoin:round;stroke-linecap:round}
+.cable.power{stroke:var(--power)}
+.cable.data{stroke:var(--data);stroke-width:2}
+.cable.bad{stroke:var(--warn)}
+.cable.sel{stroke-width:5}
+.cable.dim{opacity:.18}
+.cable.hl{stroke-width:4}
+.hit{fill:none;stroke:transparent;stroke-width:14;pointer-events:stroke;cursor:pointer}
+.marq{fill:var(--sel);fill-opacity:.08;stroke:var(--sel);stroke-width:1;pointer-events:none}
+.reach{fill:var(--cooler);fill-opacity:.1;stroke:var(--cooler);stroke-width:1.5;pointer-events:none}
+td .fd.c-none{color:var(--warn)}
+.end{fill:var(--panel);stroke-width:1.5}
+.end.power{stroke:var(--power)} .end.data{stroke:var(--data)}
+.end.loose{fill:var(--warn);stroke:var(--warn)}
+.ghost{fill:var(--sel);fill-opacity:.14;stroke:var(--sel);stroke-width:2}
+.ghost.bad{fill:var(--warn);stroke:var(--warn)}
+.ghostlbl{font-family:"Barlow Semi Condensed",sans-serif;text-anchor:middle;dominant-baseline:central;fill:var(--sel);font-weight:700}
+.tgt{fill:none;stroke:var(--sel);stroke-width:2}
+.snap{fill:var(--sel)}
+.snap.free{fill:none;stroke:var(--sel);stroke-width:1.5}
+.draft{fill:none;stroke-width:2.5;stroke-linejoin:round;stroke-linecap:round}
+.draft.power{stroke:var(--power)} .draft.data{stroke:var(--data)}
+.draft.next{opacity:.5}
+
+@media (max-width:900px){
+  html,body{height:auto}
+  .app{height:auto;min-height:100%}
+  .main{grid-template-columns:1fr}
+  .work{grid-template-rows:64vh auto}
+  .results{max-height:none}
+  aside{border-left:0;border-top:1px solid var(--line);overflow:visible}
+  .tb .k{display:none}
+  .hint{right:12px;bottom:58px}
+}
+@media (prefers-reduced-motion:reduce){.toast{transition:none}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand">Rack power layout</div>
+    <div class="grp" id="tools"></div>
+    <div class="grp">
+      <button class="tb" data-act="rotate" title="Rotate (R)">Rotate <span class="k">R</span></button>
+      <button class="tb" data-act="delete" title="Delete (Del)">Delete</button>
+      <button class="tb" data-act="copy" title="Copy (Ctrl+C)">Copy</button>
+      <button class="tb" data-act="paste" title="Paste (Ctrl+V)">Paste</button>
+    </div>
+    <div class="grp">
+      <button class="tb" data-act="undo" title="Undo (Ctrl+Z)">Undo</button>
+      <button class="tb" data-act="redo" title="Redo (Ctrl+Shift+Z)">Redo</button>
+    </div>
+    <div class="grp">
+      <button class="tb" data-act="lib">Devices</button>
+      <button class="tb" data-act="example">Load example</button>
+      <button class="tb" data-act="clear">Clear</button>
+      <button class="tb" data-act="io">Import / export</button>
+    </div>
+  </header>
+  <div class="main">
+    <div class="work">
+    <div class="stage">
+      <svg id="cv" xmlns="http://www.w3.org/2000/svg"><g id="vp"><g id="gridg"></g><g id="content"></g><g id="overlay"></g></g></svg>
+      <div class="hint" id="hint"></div>
+      <div class="zoom">
+        <button class="tb" data-act="zin" aria-label="Zoom in">+</button>
+        <button class="tb" data-act="zout" aria-label="Zoom out">−</button>
+        <button class="tb" data-act="fit" title="Fit to layout (F)">Fit</button>
+      </div>
+      <div class="toast" id="toast" role="status"></div>
+    </div>
+    <div class="results" id="results"></div>
+    </div>
+    <aside id="side"></aside>
+  </div>
+</div>
+<div id="devmenu" class="menu" hidden>
+  <input id="devq" type="search" placeholder="Search devices" autocomplete="off" aria-label="Search devices">
+  <div id="devlist" role="listbox" aria-label="Devices"></div>
+  <button class="mi mfoot" data-act="lib">Manage devices…</button>
+</div>
+<style>
+.menu{position:fixed;z-index:20;width:280px;max-height:min(440px,70vh);display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 28px rgb(0 0 0 / .2);padding:6px}
+.menu[hidden]{display:none}
+.menu input{padding:6px 9px;border:1px solid var(--line);border-radius:7px;background:var(--bg);margin-bottom:4px}
+#devlist{overflow:auto}
+.mcat{font-family:"Barlow Semi Condensed",sans-serif;font-size:14px;color:var(--muted);padding:8px 8px 2px;font-weight:600}
+.mi{display:flex;align-items:center;gap:10px;width:100%;border:0;background:transparent;padding:6px 8px;border-radius:6px;cursor:pointer;text-align:left;font-size:15px}
+.mi:hover,.mi.act{background:var(--hover)}
+.mi .swb{width:22px;display:flex;justify-content:center;flex:none}
+.mfoot{border-top:1px solid var(--line);border-radius:0 0 6px 6px;margin-top:4px;color:var(--muted)}
+.mi .sz{margin-left:auto;color:var(--muted);font-size:13px;white-space:nowrap}
+</style>
+<dialog id="lib" aria-labelledby="libtitle">
+  <h3 id="libtitle">Devices</h3>
+  <p class="note" style="margin:0 0 12px">Built-in devices come with the editor; change their ratings in the side panel. Devices you add here are saved with your layout, travel with it when you export it, and can be shared on their own as a device pack.</p>
+  <div class="libgrid">
+    <div id="liblist" class="liblist"></div>
+    <form id="libform" autocomplete="off">
+      <h4 id="libformtitle">New device</h4>
+      <div class="form2">
+        <label for="lf-label">Name</label><input id="lf-label" maxlength="40">
+        <label for="lf-short">Short name</label><input id="lf-short" maxlength="20" placeholder="Same as the name">
+        <label for="lf-cat">Group</label><input id="lf-cat" list="lf-cats" maxlength="24" placeholder="Other"><datalist id="lf-cats"></datalist>
+        <label for="lf-prefix">Name prefix</label><input id="lf-prefix" maxlength="8" placeholder="From the name">
+        <label for="lf-w">Width (cells)</label><input id="lf-w" type="number" min="1" max="40" step="1">
+        <label for="lf-h">Height (cells)</label><input id="lf-h" type="number" min="1" max="40" step="1">
+        <label for="lf-beh">Works like</label><select id="lf-beh"></select>
+        <label for="lf-color">Colour</label><input id="lf-color" type="color">
+      </div>
+      <p class="note" id="lf-help"></p>
+      <div class="form2" id="lf-stats" style="margin-top:8px"></div>
+      <p class="note c-none" id="lf-err" role="alert"></p>
+      <div class="btns"><button class="btn" type="submit" id="lf-save">Add device</button><button class="btn" type="button" id="lf-new">Start a new device</button><button class="btn danger" type="button" id="lf-del" hidden>Delete device</button></div>
+    </form>
+  </div>
+  <details class="pack"><summary>Share devices as a pack</summary>
+    <p class="note">Copy this pack to share your devices, or paste someone else’s pack and import it. A device with the same id as one you have replaces it.</p>
+    <textarea id="packtext" spellcheck="false"></textarea>
+    <div class="btns"><button class="btn" id="packcopy" type="button">Copy pack</button><button class="btn" id="packload" type="button">Import pasted pack</button></div>
+  </details>
+  <div class="btns" style="justify-content:flex-end"><button class="btn" id="libclose" type="button">Close</button></div>
+</dialog>
+<style>
+#lib{width:min(880px,94vw);max-height:92vh}
+.libgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;align-items:start}
+.liblist{max-height:430px;overflow:auto;border:1px solid var(--line);border-radius:8px}
+.lrow{display:flex;align-items:center;gap:10px;width:100%;padding:8px 10px;border:0;border-bottom:1px solid var(--line);background:transparent;text-align:left;cursor:pointer;font-size:14.5px;line-height:1.3}
+.lrow:last-child{border-bottom:0}
+.lrow:hover,.lrow.cur{background:var(--hover)}
+.lrow .swb{width:22px;display:flex;justify-content:center;flex:none}
+.lrow .meta{margin-left:auto;font-size:12.5px;color:var(--muted);text-align:right;white-space:nowrap}
+#libform h4{margin:0 0 8px;font-family:"Barlow Semi Condensed",sans-serif;font-size:18px}
+.form2{display:grid;grid-template-columns:120px minmax(0,1fr);gap:7px 10px;align-items:center;font-size:14px}
+.form2 input,.form2 select{width:100%;padding:5px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg)}
+.form2 input[type=color]{padding:2px;height:32px}
+.pack{margin-top:14px}
+.pack summary{font-family:"Barlow Semi Condensed",sans-serif;font-weight:700;font-size:17px;cursor:pointer}
+@media (max-width:720px){.libgrid{grid-template-columns:1fr}}
+</style>
+<dialog id="io">
+  <h3>Import / export layout</h3>
+  <p class="note" style="margin:0 0 8px">Copy this to save your layout elsewhere, or paste a layout and load it. It includes your own devices and rating changes.</p>
+  <textarea id="iotext" spellcheck="false"></textarea>
+  <div class="btns">
+    <button class="btn" id="iocopy">Copy</button>
+    <button class="btn" id="ioload">Load pasted layout</button>
+    <button class="btn" id="ioclose">Close</button>
+  </div>
+</dialog>
+
+<script>
+"use strict";
+/* =====================================================================
+   DEVICE CATALOG — the one place to add or change devices in code.
+   Players can also add devices without code: Devices → New device in the
+   app, then share them as a device pack (JSON).
+
+   Each device:
+     id        unique key, letters/digits/_ — saved layouts refer to it, so don’t rename
+     label     full name shown in menus and tables
+     short     short name for the toolbar button
+     cat       group in the Add device menu (Compute, Power, Cooling, Network, …)
+     prefix    automatic name prefix: "R" gives R1, R2, …
+     w, h      size in grid cells
+     behavior  what it does: one of the keys of BEHAVIORS
+     stats     numbers for that behavior; anything left out uses the default
+     color     optional outline colour, e.g. "#8a5cf6"
+     key       optional one-key shortcut
+   ===================================================================== */
+const BEHAVIORS={
+  rack:  {label:"Rack",help:"Draws power from PDUs and gets cooling from coolers in reach.",
+          stats:{maxPdus:{label:"Most PDU feeds",def:3,min:1,step:1,int:true}}},
+  pdu:   {label:"PDU",help:"Takes power from a UPS chain and passes it on to racks.",
+          stats:{kW:{label:"Capacity (kW)",def:138,min:0,step:1}}},
+  ups:   {label:"UPS",help:"Joins other UPS units into a chain and feeds PDUs.",
+          stats:{kW:{label:"Output per unit (kW)",def:24,min:0,step:1},chainMax:{label:"Most units in a chain",def:4,min:1,step:1,int:true}}},
+  cooler:{label:"Cooler",help:"Splits its cooling between the racks within reach in its row.",
+          stats:{kW:{label:"Cooling (kW)",def:40,min:0,step:1},reach:{label:"Reach each side (cells)",def:18,min:0,step:1}}},
+  switch:{label:"Network switch",help:"Takes network cables from racks and other switches.",stats:{}},
+  none:  {label:"No function",help:"Takes up space only, for walls, pillars or labels.",stats:{}}
+};
+/* which behaviours a cable may join: names sorted alphabetically and joined with "-" */
+const RULES={power:["ups-ups","pdu-ups","pdu-rack"],data:["rack-switch","switch-switch"]};
+const BUILTIN_DEVICES=[
+  {id:"rack",  label:"AI rack",               short:"AI rack",     cat:"Compute",prefix:"R",  w:4,h:5,behavior:"rack",  stats:{maxPdus:3},         key:"1"},
+  {id:"rack3", label:"Rack",                  short:"Rack",        cat:"Compute",prefix:"SR", w:3,h:5,behavior:"rack",  stats:{maxPdus:3},         key:"6"},
+  {id:"pdu",   label:"PDU",                   short:"PDU",         cat:"Power",  prefix:"PDU",w:3,h:2,behavior:"pdu",   stats:{kW:138},            key:"2"},
+  {id:"ups",   label:"Large UPS",             short:"Large UPS",   cat:"Power",  prefix:"UPS",w:3,h:3,behavior:"ups",   stats:{kW:24,chainMax:4},  key:"3"},
+  {id:"cooler",label:"Twin Aisle Cooler",     short:"Aisle Cooler",cat:"Cooling",prefix:"CL", w:2,h:4,behavior:"cooler",stats:{kW:40,reach:18},    key:"4"},
+  {id:"switch",label:"Hyperscale Core Switch",short:"Core Switch", cat:"Network",prefix:"SW", w:3,h:3,behavior:"switch",stats:{},                 key:"5"}
+];
+const FORMAT="rack-power-layout",VERSION=4,PACK_FORMAT="rack-power-devices";
+const BUILTIN_IDS=new Set(BUILTIN_DEVICES.map(d=>d.id));
+let TYPES={};
+const roleOf=t=>(TYPES[t]&&TYPES[t].behavior)||t;
+/* a device type’s stat, after the layout’s rating changes */
+function stat(type,k){const t=TYPES[type];if(t&&t.stats&&t.stats[k]!=null)return t.stats[k];const b=BEHAVIORS[roleOf(type)];return b&&b.stats[k]?b.stats[k].def:0;}
+/* catalog = built-in devices + the layout’s own devices + the layout’s rating changes */
+function buildCatalog(state){
+  const out={};
+  for(const d of BUILTIN_DEVICES)out[d.id]={...d,stats:{...(d.stats||{})},custom:false};
+  for(const d of (state&&state.devices)||[])if(!out[d.id])out[d.id]={...d,stats:{...(d.stats||{})},custom:true};
+  for(const [id,ov] of Object.entries((state&&state.overrides)||{}))if(out[id])Object.assign(out[id].stats,ov);
+  TYPES=out;
+}
+const slug=t=>String(t).toLowerCase().replace(/[^a-z0-9]+/g,"_").replace(/^_+|_+$/g,"").slice(0,40);
+/* checks one device definition from the app or a pack; returns a clean copy or throws a message */
+function checkDevice(d){
+  if(!d||typeof d!=="object")throw "An entry isn’t a device";
+  const label=String(d.label||"").trim().slice(0,40);
+  if(!label)throw "A device needs a name (label)";
+  if(!BEHAVIORS[d.behavior])throw `${label}: behavior must be one of ${Object.keys(BEHAVIORS).join(", ")}`;
+  const w=Math.round(+d.w),h=Math.round(+d.h);
+  if(!(w>=1&&w<=40&&h>=1&&h<=40))throw `${label}: width and height must be whole cells from 1 to 40`;
+  const stats={};
+  for(const [k,sd] of Object.entries(BEHAVIORS[d.behavior].stats)){
+    let v=d.stats&&d.stats[k]!=null?+d.stats[k]:sd.def;
+    if(!isFinite(v)||v<sd.min)v=sd.def;if(sd.int)v=Math.round(v);stats[k]=v;
+  }
+  const o={id:slug(d.id||label)||"device",label,short:String(d.short||label).trim().slice(0,20)||label,
+    cat:String(d.cat||"Other").trim().slice(0,24)||"Other",
+    prefix:String(d.prefix||label.replace(/[^A-Za-z]/g,"").slice(0,3).toUpperCase()||"D").replace(/[^A-Za-z0-9]/g,"").slice(0,8)||"D",
+    w,h,behavior:d.behavior,stats};
+  if(/^#[0-9a-f]{6}$/i.test(d.color||""))o.color=d.color.toLowerCase();
+  return o;
+}
+buildCatalog(null);
+const GW=512, GH=512, INF=1e9;
+const POWER_OK=new Set(RULES.power),DATA_OK=new Set(RULES.data);
+
+/* ================= geometry ================= */
+const q4=v=>Math.round(v*4)/4;
+const near=(a,b)=>Math.abs(a-b)<1e-6;
+const samePt=(p,q)=>near(p[0],q[0])&&near(p[1],q[1]);
+function dedupe(pts){const o=[];for(const p of pts){const r=[q4(p[0]),q4(p[1])];if(!o.length||!samePt(o[o.length-1],r))o.push(r);}return o;}
+function simplify(pts){
+  const o=dedupe(pts);
+  for(let i=1;i<o.length-1;){
+    const a=o[i-1],b=o[i],c=o[i+1];
+    const cr=(b[0]-a[0])*(c[1]-b[1])-(b[1]-a[1])*(c[0]-b[0]);
+    const dt=(b[0]-a[0])*(c[0]-b[0])+(b[1]-a[1])*(c[1]-b[1]);
+    if(Math.abs(cr)<1e-9&&dt>0){o.splice(i,1);i=Math.max(1,i-1);}else i++;
+  }
+  return o;
+}
+/* diagonal first, then straight */
+function diagFirst(p,q){
+  const dx=q[0]-p[0],dy=q[1]-p[1],d=Math.min(Math.abs(dx),Math.abs(dy));
+  return dedupe([p,[p[0]+Math.sign(dx)*d,p[1]+Math.sign(dy)*d],q]);
+}
+/* straight, diagonal, straight */
+function route3(p,q){
+  const dx=q[0]-p[0],dy=q[1]-p[1],ax=Math.abs(dx),ay=Math.abs(dy),sx=Math.sign(dx),sy=Math.sign(dy),d=Math.min(ax,ay);
+  if(ax>=ay){const h=Math.floor((ax-d)*2)/4;return dedupe([p,[p[0]+sx*h,p[1]],[p[0]+sx*(h+d),p[1]+sy*d],q]);}
+  const h=Math.floor((ay-d)*2)/4;return dedupe([p,[p[0],p[1]+sy*h],[p[0]+sx*d,p[1]+sy*(h+d)],q]);
+}
+/* snap a segment from p toward c to 0/45/90° on the quarter grid */
+function constrain(p,c){
+  const dx=c[0]-p[0],dy=c[1]-p[1];
+  if(!dx&&!dy)return p.slice();
+  const k=Math.round(Math.atan2(dy,dx)/(Math.PI/4));
+  const ux=Math.round(Math.cos(k*Math.PI/4)),uy=Math.round(Math.sin(k*Math.PI/4));
+  let s=(ux&&uy)?(dx*ux+dy*uy)/2:(dx*ux+dy*uy);
+  s=Math.max(0,q4(s));
+  return [q4(p[0]+ux*s),q4(p[1]+uy*s)];
+}
+function perimeterPoint(b,pt){
+  const x0=b.x,y0=b.y,x1=b.x+b.w,y1=b.y+b.h;
+  let px=Math.min(Math.max(pt[0],x0),x1),py=Math.min(Math.max(pt[1],y0),y1);
+  const inside=pt[0]>x0&&pt[0]<x1&&pt[1]>y0&&pt[1]<y1;
+  if(inside){
+    const dl=px-x0,dr=x1-px,dt=py-y0,db=y1-py,m=Math.min(dl,dr,dt,db);
+    if(m===dl)px=x0;else if(m===dr)px=x1;else if(m===dt)py=y0;else py=y1;
+  }
+  px=q4(px);py=q4(py);
+  return {pt:[px,py],d:inside?0:Math.hypot(pt[0]-px,pt[1]-py),inside};
+}
+function findAttach(state,pt,excludeId){
+  let best=null;
+  for(const b of state.blocks){
+    if(b.id===excludeId)continue;
+    const r=perimeterPoint(b,pt);
+    if(!r.inside&&r.d>0.45)continue;
+    const score=r.inside?-1:r.d;
+    if(!best||score<best.score)best={b,pt:r.pt,score};
+  }
+  return best;
+}
+/* cables leave and enter a block straight out from its edge for at least STUB cells */
+const STUB=0.25;
+function edgeNormal(b,ox,oy){if(near(ox,0))return [-1,0];if(near(ox,b.w))return [1,0];if(near(oy,0))return [0,-1];return [0,1];}
+const stubOf=(p,n)=>[q4(p[0]+n[0]*STUB),q4(p[1]+n[1]*STUB)];
+function okStub(p0,p1,n){const dx=p1[0]-p0[0],dy=p1[1]-p0[1];return Math.abs(dx*n[1]-dy*n[0])<1e-6&&dx*n[0]+dy*n[1]>=STUB-1e-6;}
+function fixStubs(pts,na,nb){
+  let o=pts.map(p=>p.slice());
+  if(na&&o.length>=2&&!okStub(o[0],o[1],na)){const s=stubOf(o[0],na);o=[o[0],s,...diagFirst(s,o[1]).slice(1),...o.slice(2)];}
+  if(nb&&o.length>=2&&!okStub(o[o.length-1],o[o.length-2],nb)){const e=o[o.length-1],s=stubOf(e,nb),prev=o[o.length-2];o=[...o.slice(0,-2),...diagFirst(prev,s),e];}
+  return dedupe(o);
+}
+/* re-route a cable after one or both attached ends moved; na/nb are the ends' edge normals */
+function reroute(pts,ns,ne,na,nb){
+  let inner=pts.slice(1,-1);
+  if(ns&&inner.length)inner=inner.slice(1);
+  if(ne&&inner.length)inner=inner.slice(0,-1);
+  const s=ns||pts[0],e=ne||pts[pts.length-1];
+  const hs=ns&&na?stubOf(s,na):s,te=ne&&nb?stubOf(e,nb):e;
+  let out;
+  if(!inner.length)out=[s,...route3(hs,te),e];
+  else{
+    out=[s];
+    if(ns)out.push(...diagFirst(inner[0],hs).reverse().slice(0,-1));
+    out.push(...inner);
+    if(ne)out.push(...diagFirst(inner[inner.length-1],te).slice(1));
+    out.push(e);
+  }
+  return fixStubs(dedupe(out),na,nb);
+}
+const overlap=(a,b)=>a.x<b.x+b.w&&b.x<a.x+a.w&&a.y<b.y+b.h&&b.y<a.y+a.h;
+/* twin cooler reach: `range` cells to each side (across its short side), measured from the cooler's centre, within its row */
+function inReach(c,r,range){
+  const half=range;
+  if(c.w<=c.h){const cc=c.x+c.w/2,rc=r.x+r.w/2;return Math.abs(rc-cc)<=half+1e-6&&r.y<c.y+c.h&&c.y<r.y+r.h;}
+  const cc=c.y+c.h/2,rc=r.y+r.h/2;return Math.abs(rc-cc)<=half+1e-6&&r.x<c.x+c.w&&c.x<r.x+r.w;
+}
+function reachRect(c,range){return c.w<=c.h?{x:c.x+c.w/2-range,y:c.y,w:range*2,h:c.h}:{x:c.x,y:c.y+c.h/2-range,w:c.w,h:range*2};}
+
+/* ================= max-flow ================= */
+class Net{
+  constructor(){this.n=0;this.adj=[];this.to=[];this.cap=[];}
+  node(){this.adj.push([]);return this.n++;}
+  edge(u,v,c){this.adj[u].push(this.to.length);this.to.push(v);this.cap.push(c);this.adj[v].push(this.to.length);this.to.push(u);this.cap.push(0);}
+  flow(s,t,blocked){
+    let total=0;
+    for(;;){
+      const prev=new Array(this.n).fill(-1);prev[s]=-2;
+      const qu=[s];let h=0;
+      while(h<qu.length&&prev[t]===-1){
+        const u=qu[h++];if(u===blocked)continue;
+        for(const e of this.adj[u]){const v=this.to[e];if(prev[v]===-1&&this.cap[e]>1e-9){prev[v]=e;qu.push(v);}}
+      }
+      if(prev[t]===-1)return total;
+      let f=Infinity;
+      for(let v=t;v!==s;v=this.to[prev[v]^1])f=Math.min(f,this.cap[prev[v]]);
+      for(let v=t;v!==s;v=this.to[prev[v]^1]){this.cap[prev[v]]-=f;this.cap[prev[v]^1]+=f;}
+      total+=f;
+    }
+  }
+}
+
+/* ================= analysis ================= */
+function natural(a,b){return a.localeCompare(b,undefined,{numeric:true});}
+function analyze(state){
+  const B=new Map(state.blocks.map(b=>[b.id,b]));
+  const issues=[],power=[],bad=new Set();
+  for(const c of state.cables){
+    const a=c.a&&B.get(c.a.block),b=c.b&&B.get(c.b.block);
+    const label=c.kind==="power"?"Power cable":"Network cable";
+    if(!a||!b){const o=a||b;issues.push({sev:"warn",msg:`${label}${o?" from "+o.name:""} has a loose end`,cable:c.id});bad.add(c.id);continue;}
+    if(a===b){issues.push({sev:"warn",msg:`${label} on ${a.name} loops back into itself`,cable:c.id});bad.add(c.id);continue;}
+    const pair=[roleOf(a.type),roleOf(b.type)].sort().join("-");
+    const of=t=>roleOf(a.type)===t?a:b, other=t=>roleOf(a.type)===t?b:a;
+    if(c.kind==="power"){
+      if(POWER_OK.has(pair)){power.push({c,a,b,pair});continue;}
+      let msg;
+      if(pair==="rack-ups")msg=`${of("ups").name} → ${of("rack").name}: a UPS has to feed a PDU before it reaches a rack`;
+      else if(/none/.test(pair))msg=`${(roleOf(a.type)==="none"?a:b).name} doesn’t take cables`;
+      else if(/cooler|switch/.test(pair))msg=`${(/cooler|switch/.test(roleOf(a.type))?a:b).name} doesn’t need a power cable`;
+      else if(pair==="pdu-pdu")msg=`${a.name} ↔ ${b.name}: PDUs can’t be daisy-chained`;
+      else msg=`Power cable ${a.name} ↔ ${b.name} isn’t a valid power path`;
+      issues.push({sev:"err",msg,cable:c.id});bad.add(c.id);
+    }else{
+      if(!DATA_OK.has(pair)){issues.push({sev:"warn",msg:`Network cable ${a.name} ↔ ${b.name}: network cables run between network switches and racks`,cable:c.id});bad.add(c.id);}
+    }
+  }
+  /* UPS chains */
+  const upsList=state.blocks.filter(b=>roleOf(b.type)==="ups");
+  const parent=new Map(upsList.map(u=>[u.id,u.id]));
+  const find=x=>{while(parent.get(x)!==x){parent.set(x,parent.get(parent.get(x)));x=parent.get(x);}return x;};
+  for(const l of power)if(l.pair==="ups-ups")parent.set(find(l.a.id),find(l.b.id));
+  const groups=new Map();
+  for(const u of upsList){const r=find(u.id);if(!groups.has(r))groups.set(r,[]);groups.get(r).push(u);}
+  const chains=[...groups.values()].map(units=>({units,minY:Math.min(...units.map(u=>u.y)),minX:Math.min(...units.map(u=>u.x))}))
+    .sort((p,q)=>p.minY-q.minY||p.minX-q.minX);
+  const chainOf=new Map();
+  chains.forEach((ch,i)=>{
+    ch.key="chain"+i;
+    ch.name="Chain "+(i<26?String.fromCharCode(65+i):i+1);
+    ch.size=ch.units.length;
+    ch.max=Math.min(...ch.units.map(u=>stat(u.type,"chainMax")));
+    ch.valid=ch.size<=ch.max;
+    ch.cap=ch.valid?ch.units.reduce((a,u)=>a+stat(u.type,"kW"),0):0;
+    ch.pdus=new Set();ch.links=new Set();
+    ch.units.sort((p,q)=>natural(p.name,q.name));
+    ch.units.forEach(u=>chainOf.set(u.id,ch));
+    if(!ch.valid)issues.push({sev:"err",msg:`${ch.name} chains ${ch.size} UPS units; the limit is ${ch.max}. It counts as 0 kW until it’s split.`});
+  });
+  const pdus=state.blocks.filter(b=>roleOf(b.type)==="pdu").sort((p,q)=>natural(p.name,q.name));
+  const racks=state.blocks.filter(b=>roleOf(b.type)==="rack").sort((p,q)=>natural(p.name,q.name));
+  const loads=[]; /* coolers and switches don’t draw from the UPS/PDU system */
+  const pduChains=new Map(pdus.map(p=>[p.id,new Set()]));
+  const pduCables=new Map(pdus.map(p=>[p.id,[]]));
+  const pduUsed=new Map(pdus.map(p=>[p.id,false]));
+  const rackPdus=new Map(racks.map(r=>[r.id,new Set()]));
+  const rackCables=new Map(racks.map(r=>[r.id,[]]));
+  const loadPdus=new Map(loads.map(l=>[l.id,new Set()]));
+  for(const l of power){
+    const of=t=>roleOf(l.a.type)===t?l.a:l.b;
+    if(l.pair==="ups-ups"){chainOf.get(l.a.id).links.add(l.c.id);}
+    else if(l.pair==="pdu-ups"){const p=of("pdu"),ch=chainOf.get(of("ups").id);pduChains.get(p.id).add(ch);ch.pdus.add(p.id);pduCables.get(p.id).push(l.c.id);}
+    else if(l.pair==="pdu-rack"){const p=of("pdu"),r=of("rack");
+      const mx=stat(r.type,"maxPdus");
+      if(!rackPdus.get(r.id).has(p.id)&&rackPdus.get(r.id).size>=mx){issues.push({sev:"err",msg:`${r.name} already has ${mx} PDU feeds, its limit`,cable:l.c.id});bad.add(l.c.id);continue;}
+      rackPdus.get(r.id).add(p.id);rackCables.get(r.id).push(l.c.id);pduUsed.set(p.id,true);}
+    else{const p=of("pdu"),ld=l.a.type==="pdu"?l.b:l.a;loadPdus.get(ld.id).add(p.id);pduUsed.set(p.id,true);}
+  }
+  for(const p of pdus)if(!pduChains.get(p.id).size&&pduUsed.get(p.id))issues.push({sev:"err",msg:`${p.name} has no UPS feeding it`});
+  for(const r of racks)if(!rackPdus.get(r.id).size)issues.push({sev:"warn",msg:`${r.name} has no power feed`});
+  for(const ch of chains)if(!ch.pdus.size)issues.push({sev:"info",msg:`${ch.name} isn’t feeding any PDU yet`});
+
+  /* power: each UPS chain's output is divided evenly between the racks it reaches through working PDUs */
+  function alloc(failed){
+    const out=new Map(racks.map(r=>[r.id,0])),load=new Map(),parts=[];
+    for(const ch of chains){
+      if(ch.cap<=0)continue;
+      const reach=[];
+      for(const r of racks){const ps=[...rackPdus.get(r.id)].filter(pid=>!failed.has(pid)&&pduChains.get(pid).has(ch));if(ps.length)reach.push([r.id,ps]);}
+      if(!reach.length)continue;
+      const share=ch.cap/reach.length;
+      for(const [rid,ps] of reach)for(const pid of ps){const kw=share/ps.length;parts.push([rid,pid,kw]);load.set(pid,(load.get(pid)||0)+kw);}
+    }
+    for(const [rid,pid,kw] of parts){const L=load.get(pid),cap=stat(B.get(pid).type,"kW"),f=L>cap?cap/L:1;out.set(rid,out.get(rid)+kw*f);}
+    return {out,load};
+  }
+  const base=alloc(new Set());
+  for(const p of pdus){const L=base.load.get(p.id)||0;if(L>stat(p.type,"kW")+1e-6)issues.push({sev:"warn",msg:`${p.name} is asked for ${fmt(L)} kW but caps at ${fmt(stat(p.type,"kW"))} kW, so its racks get less`});}
+  const totalCap=chains.reduce((a,c)=>a+c.cap,0);
+  const cache=new Map();
+  const run=f=>{const k=[...f].sort().join(",");if(!cache.has(k))cache.set(k,alloc(f).out);return cache.get(k);};
+  const res=racks.map(r=>{
+    const ps=[...rackPdus.get(r.id)];
+    const P0=base.out.get(r.id);
+    let P1=ps.length<2?0:Infinity,P2=ps.length<3?0:Infinity;
+    if(ps.length>=2)for(const a of ps)P1=Math.min(P1,run(new Set([a])).get(r.id));
+    if(ps.length>=3)for(let i=0;i<ps.length;i++)for(let j=i+1;j<ps.length;j++)P2=Math.min(P2,run(new Set([ps[i],ps[j]])).get(r.id));
+    const feeds=ps.map(pid=>{const p=B.get(pid);return {name:p.name,chains:[...pduChains.get(pid)].map(c=>c.name.replace("Chain ",""))};}).sort((p,q)=>natural(p.name,q.name));
+    const path=new Set(rackCables.get(r.id));
+    for(const pid of ps){pduCables.get(pid).forEach(x=>path.add(x));for(const ch of pduChains.get(pid))ch.links.forEach(x=>path.add(x));}
+    return {id:r.id,name:r.name,type:r.type,P:[P0,P1,P2],feeds,path};
+  });
+  /* cooling: each twin cooler's output is divided evenly between the racks it reaches */
+  const coolers=state.blocks.filter(b=>roleOf(b.type)==="cooler").sort((p,q)=>natural(p.name,q.name));
+  const covers=new Map(coolers.map(c=>[c.id,racks.filter(r=>inReach(c,r,stat(c.type,"reach"))).map(r=>r.id)]));
+  for(const r of res){
+    const cs=coolers.filter(c=>covers.get(c.id).includes(r.id));
+    r.coolerIds=cs.map(c=>c.id);r.coolers=cs.map(c=>c.name);
+    const shares=cs.map(c=>stat(c.type,"kW")/covers.get(c.id).length);
+    r.coolShares=cs.map((c,i)=>({name:c.name,kw:shares[i]}));
+    r.C=shares.reduce((a,v)=>a+v,0);
+    r.U=r.P.map(v=>Math.min(v,r.C));
+    r.status=r.U[0]<1e-6?"off":r.U[1]>=r.U[0]-0.05?"ok":r.U[1]<1e-6?"none":"part";
+    if(!cs.length)issues.push({sev:"warn",msg:`${r.name} isn’t within reach of any cooler`});
+  }
+  for(const c of coolers)if(!covers.get(c.id).length)issues.push({sev:"info",msg:`${c.name} has no racks within its reach`});
+  const sum=f=>res.reduce((a,r)=>a+f(r),0);
+  const totals={P:[0,1,2].map(i=>sum(r=>r.P[i])),C:sum(r=>r.C),U:[0,1,2].map(i=>sum(r=>r.U[i]))};
+  const sevOrder={err:0,warn:1,info:2};
+  issues.sort((p,q)=>sevOrder[p.sev]-sevOrder[q.sev]);
+  return {chains,chainOf,racks:res,rackMap:new Map(res.map(r=>[r.id,r])),issues,bad,totalCap,pduChains,coolerCovers:covers,totals,pduLoad:base.load};
+}
+function fmt(v){return (Math.round(v*10)/10).toFixed(1);}
+
+/* ================= example ================= */
+function demoState(){
+  const st={format:FORMAT,version:VERSION,devices:[],overrides:{},blocks:[],cables:[],seq:1};
+  const add=(type,x,y,name)=>{const t=TYPES[type];const b={id:"b"+st.seq++,type,x,y,w:t.w,h:t.h,name};st.blocks.push(b);return b;};
+  const side=(b,s,f)=>s==="top"?[q4(b.x+b.w*f),b.y]:s==="bottom"?[q4(b.x+b.w*f),b.y+b.h]:s==="left"?[b.x,q4(b.y+b.h*f)]:[b.x+b.w,q4(b.y+b.h*f)];
+  const wire=(kind,b1,s1,f1,b2,s2,f2,mid)=>{
+    const p=side(b1,s1,f1),q=side(b2,s2,f2);
+    const NM={top:[0,-1],bottom:[0,1],left:[-1,0],right:[1,0]};
+    st.cables.push({id:"c"+st.seq++,kind,pts:simplify([p,...route3(stubOf(p,NM[s1]),stubOf(q,NM[s2])),q]),a:{block:b1.id,ox:p[0]-b1.x,oy:p[1]-b1.y},b:{block:b2.id,ox:q[0]-b2.x,oy:q[1]-b2.y}});
+  };
+  const ua=[4,8,12,16].map((x,i)=>add("ups",x,1,"UPS A"+(i+1)));
+  const ub=[4,8,12,16].map((x,i)=>add("ups",x,25,"UPS B"+(i+1)));
+  const a1=add("pdu",6,7,"PDU A1"),a2=add("pdu",18,7,"PDU A2");
+  const r=[4,9,16,21].map((x,i)=>add("rack",x,12,"R"+(i+1)));
+  const b1=add("pdu",6,20,"PDU B1"),b2=add("pdu",18,20,"PDU B2");
+  const c1=add("cooler",13,12,"CL1"),c2=add("cooler",25,12,"CL2");
+  const sw=add("switch",23,7,"SW1");
+  for(let i=0;i<3;i++){wire("power",ua[i],"right",.5,ua[i+1],"left",.5);wire("power",ub[i],"right",.5,ub[i+1],"left",.5);}
+  wire("power",ua[0],"bottom",.5,a1,"top",.5);wire("power",ua[3],"bottom",.5,a2,"top",.5);
+  wire("power",ub[0],"top",.5,b1,"bottom",.5);wire("power",ub[3],"top",.5,b2,"bottom",.5);
+  wire("power",a1,"bottom",.25,r[0],"top",.75);wire("power",a1,"bottom",.75,r[1],"top",.25);
+  wire("power",a2,"bottom",.25,r[2],"top",.75);wire("power",a2,"bottom",.75,r[3],"top",.25);
+  wire("power",b1,"top",.25,r[0],"bottom",.75);wire("power",b1,"top",.75,r[1],"bottom",.25);
+  wire("power",b2,"top",.25,r[2],"bottom",.75);wire("power",b2,"top",.75,r[3],"bottom",.25);
+  wire("data",sw,"bottom",.5,r[3],"top",.75);
+  return st;
+}
+
+/* ================= UI ================= */
+if(typeof document!=="undefined"){
+const KEY="rack-power-layout-v1";
+const svg=document.getElementById("cv"),vp=document.getElementById("vp"),content=document.getElementById("content"),overlay=document.getElementById("overlay");
+const side=document.getElementById("side"),hintEl=document.getElementById("hint"),toastEl=document.getElementById("toast"),toolsEl=document.getElementById("tools");
+let S,A,view={tx:20,ty:20,s:24};
+let mode="select",placeType="rack",placeRot=false,cableKind="power";
+let sel=null,drawing=null,hover=null,drag=null,pan=null,spaceDown=false,hlRack=null,marq=null;
+let hist=[],redoStack=[],saved=null,clip=null,ratingDev=null,libEdit=null;
+
+/* turns any saved or pasted layout (any version) into the current format */
+function clean(st){
+  st=st||{};
+  const o={format:FORMAT,version:VERSION,devices:[],overrides:{},blocks:[],cables:[],seq:1};
+  for(const d of Array.isArray(st.devices)?st.devices:[]){try{const v=checkDevice(d);if(!BUILTIN_IDS.has(v.id)&&!o.devices.some(x=>x.id===v.id))o.devices.push(v);}catch(e){}}
+  for(const [id,ov] of Object.entries(st.overrides&&typeof st.overrides==="object"?st.overrides:{})){
+    if(!ov||typeof ov!=="object")continue;const c={};for(const [k,v] of Object.entries(ov))if(isFinite(+v))c[k]=+v;if(Object.keys(c).length)o.overrides[id]=c;}
+  if(st.settings){/* layouts saved before version 4 kept ratings in one settings object */
+    const s=st.settings,set=(id,k,v,def)=>{v=+v;if(isFinite(v)&&v!==def)(o.overrides[id]=o.overrides[id]||{})[k]=v;};
+    set("ups","kW",!(s.v>=2)&&+s.upsKW===6?24:s.upsKW,24);set("ups","chainMax",s.chainMax,4);
+    set("pdu","kW",!(s.v>=3)&&+s.pduKW===11?138:s.pduKW,138);set("cooler","kW",s.coolKW,40);set("cooler","reach",s.coolRange,18);}
+  buildCatalog(o);
+  let mx=0;const ids=new Set();
+  for(const b of (st&&st.blocks)||[]){if(!TYPES[b.type])continue;o.blocks.push({id:String(b.id),type:b.type,x:+b.x,y:+b.y,w:+b.w,h:+b.h,name:String(b.name||b.type)});ids.add(String(b.id));}
+  for(const c of (st&&st.cables)||[]){if(!Array.isArray(c.pts)||c.pts.length<2)continue;
+    const at=x=>x&&ids.has(String(x.block))?{block:String(x.block),ox:+x.ox,oy:+x.oy}:null;
+    o.cables.push({id:String(c.id),kind:c.kind==="data"?"data":"power",pts:c.pts.map(p=>[+p[0],+p[1]]),a:at(c.a),b:at(c.b)});}
+  for(const x of [...o.blocks,...o.cables]){const n=parseInt(String(x.id).replace(/\D/g,""),10);if(n>mx)mx=n;}
+  o.seq=Math.max(mx+1,+(st&&st.seq)||1);
+  const bm=new Map(o.blocks.map(b=>[b.id,b]));
+  const nrm=x=>x&&bm.get(x.block)?edgeNormal(bm.get(x.block),x.ox,x.oy):null;
+  for(const c of o.cables)c.pts=simplify(fixStubs(c.pts,nrm(c.a),nrm(c.b)));
+  return o;
+}
+function load(){try{const j=localStorage.getItem(KEY);if(j)return clean(JSON.parse(j));}catch(e){}return demoState();}
+function persist(){try{localStorage.setItem(KEY,saved);}catch(e){}}
+const nid=p=>p+(S.seq++);
+const getB=id=>S.blocks.find(b=>b.id===id);
+const getC=id=>S.cables.find(c=>c.id===id);
+const esc=s=>String(s).replace(/[&<>"]/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[ch]));
+
+function commit(){
+  const j=JSON.stringify(S);
+  if(saved!==null&&j!==saved){hist.push(saved);if(hist.length>200)hist.shift();redoStack=[];}
+  saved=j;persist();refresh();
+}
+function refresh(){
+  buildCatalog(S);
+  A=analyze(S);
+  if(sel){const l=selLists();sel=mkSel(l.blocks.filter(id=>getB(id)),l.cables.filter(id=>getC(id)));}
+  renderWorld();renderOverlay();renderSide();renderTools();renderResults();
+}
+function renderResults(){
+  const el=document.getElementById("results");
+  if(!A.racks.length){el.innerHTML=`<h2>Racks</h2><p class="note" style="margin:0">Place a rack from Add device, feed it from PDUs, and feed the PDUs from a UPS chain.</p>`;return;}
+  const cur=hlSet(),k=(v,ref,first)=>`<td class="kw${first?" sep":""}${v<1e-6&&ref>1e-6?" c-none":""}">${fmt(v)}</td>`;
+  let h=`<h2>Racks <small>kW per rack, with power and cooling shared between racks</small></h2><table class="rt"><thead>
+    <tr><th rowspan="2">Rack</th><th rowspan="2" style="text-align:left">PDU feeds</th><th colspan="3" class="g sep">Power</th><th rowspan="2" class="g sep">Cooling</th><th colspan="3" class="g sep">Usable</th></tr>
+    <tr><th class="sep">0 failed</th><th>1 failed</th><th>2 failed</th><th class="sep">0 failed</th><th>1 failed</th><th>2 failed</th></tr></thead><tbody>`;
+  for(const r of A.racks){
+    h+=`<tr data-rack="${r.id}"${cur&&cur.id===r.id?' class="cur"':""}><td><div class="nm"><span class="dot st-${r.status}"></span>${esc(r.name)}</div><div class="fd">${esc(TYPES[r.type].label)}</div></td>
+      <td class="fd">${r.feeds.length?r.feeds.map(f=>esc(f.name)+(f.chains.length?" ("+f.chains.join("+")+")":" (no UPS)")).join(", ")+` <span>· ${r.feeds.length}/${stat(r.type,"maxPdus")}</span>`:"No feed"}</td>
+      ${k(r.P[0],r.P[0],1)}${k(r.P[1],r.P[0])}${k(r.P[2],r.P[0])}${k(r.C,1,1)}${k(r.U[0],r.U[0],1)}${k(r.U[1],r.U[0])}${k(r.U[2],r.U[0])}</tr>`;
+  }
+  const T=A.totals;
+  h+=`</tbody><tfoot><tr><td>Total</td><td></td><td class="kw sep">${fmt(T.P[0])}</td><td class="kw">${fmt(T.P[1])}</td><td class="kw">${fmt(T.P[2])}</td><td class="kw sep">${fmt(T.C)}</td><td class="kw sep">${fmt(T.U[0])}</td><td class="kw">${fmt(T.U[1])}</td><td class="kw">${fmt(T.U[2])}</td></tr></tfoot></table>
+    <p class="note">Power is each rack’s share of the UPS chains feeding it. 1 and 2 failed are the worst case when that many of the rack’s own PDUs fail. Cooling is its share of the coolers in reach, each split evenly between its racks. Usable is the lower of power and cooling. Totals add up every rack’s own worst case, so they can be lower than any real single failure. <span class="dot st-ok"></span>no loss with 1 PDU down <span class="dot st-part"></span>reduced <span class="dot st-none"></span>nothing left <span class="dot st-off"></span>no power or cooling</p>`;
+  el.innerHTML=h;
+}
+function undo(){if(!hist.length)return;redoStack.push(saved);saved=hist.pop();S=JSON.parse(saved);drawing=null;persist();refresh();}
+function redo(){if(!redoStack.length)return;hist.push(saved);saved=redoStack.pop();S=JSON.parse(saved);drawing=null;persist();refresh();}
+let toastT;function toast(m){toastEl.textContent=m;toastEl.classList.add("show");clearTimeout(toastT);toastT=setTimeout(()=>toastEl.classList.remove("show"),2200);}
+
+/* grid */
+let GRID="";
+(function(){let q="",m="",t="";
+  for(let i=0;i<=GW*4;i++){const x=i/4,s=`M${x} 0V${GH}`;if(i%40===0)t+=s;else if(i%4===0)m+=s;else q+=s;}
+  for(let i=0;i<=GH*4;i++){const y=i/4,s=`M0 ${y}H${GW}`;if(i%40===0)t+=s;else if(i%4===0)m+=s;else q+=s;}
+  GRID=`<rect class="floor" x="0" y="0" width="${GW}" height="${GH}"/><path class="gq" d="${q}"/><path class="gm" d="${m}"/><path class="g10" d="${t}"/>`;})();
+document.getElementById("gridg").innerHTML=GRID;
+
+function applyView(){vp.setAttribute("transform",`translate(${view.tx} ${view.ty}) scale(${view.s})`);svg.classList.toggle("far",view.s<22);svg.classList.toggle("vfar",view.s<7);}
+function fit(){
+  const r=svg.getBoundingClientRect();if(!r.width||!r.height)return;
+  let x0=0,y0=0,x1=GW,y1=GH;
+  if(S.blocks.length){x0=Math.min(...S.blocks.map(b=>b.x))-2;y0=Math.min(...S.blocks.map(b=>b.y))-2;x1=Math.max(...S.blocks.map(b=>b.x+b.w))+2;y1=Math.max(...S.blocks.map(b=>b.y+b.h))+2;}
+  view.s=Math.max(1,Math.min(70,Math.min(r.width/(x1-x0),r.height/(y1-y0))));
+  view.tx=(r.width-(x1-x0)*view.s)/2-x0*view.s;view.ty=(r.height-(y1-y0)*view.s)/2-y0*view.s;
+  applyView();
+}
+function zoomAt(f,cx,cy){
+  const ns=Math.max(1,Math.min(120,view.s*f));
+  const wx=(cx-view.tx)/view.s,wy=(cy-view.ty)/view.s;
+  view.s=ns;view.tx=cx-wx*ns;view.ty=cy-wy*ns;applyView();
+}
+
+function hlSet(){
+  const id=hlRack||(sel&&sel.kind==="block"&&getB(sel.id)&&roleOf(getB(sel.id).type)==="rack"?sel.id:null);
+  const r=id&&A.rackMap.get(id);return r?{id,path:r.path}:null;
+}
+function blockSVG(b,hl){
+  const T=TYPES[b.type],sl=selB(b.id),hb=Math.min(0.9,b.h*0.4),cx=b.x+b.w/2;
+  let lines=[],extra="",cls="";
+  if(roleOf(b.type)==="rack"){const r=A.rackMap.get(b.id);
+    lines=[[`Power ${r.P.map(v=>+fmt(v)).join(" · ")}`,"v"+(r.P[0]<1e-6?" neg":"")],[`Cooling ${+fmt(r.C)}`,"v"+(r.C<1e-6?" neg":"")],[`Usable ${r.U.map(v=>+fmt(v)).join(" · ")}`,"v"]];
+    extra=`<circle class="sdot st-${r.status}" cx="${b.x+b.w-0.38}" cy="${b.y+hb/2}" r="0.15"/>`;}
+  else if(roleOf(b.type)==="pdu"){const kw=stat(b.type,"kW");lines=[[`${+fmt(kw)} kW · ${Math.round(kw*1000/230)} A`,""]];}
+  else if(roleOf(b.type)==="ups"){const ch=A.chainOf.get(b.id);lines=[[ch.name,"v"],[`${ch.size}/${ch.max} · ${+fmt(ch.cap)} kW`,ch.valid?"":"neg"]];if(!ch.valid)cls=" badchain";}
+  else if(roleOf(b.type)==="cooler")lines=[[`${fmt(stat(b.type,"kW"))} kW`,"v"],["cooling",""]];
+  else if(roleOf(b.type)==="switch")lines=[["Network",""]];
+  if(T&&T.color)cls+=" cc";
+  const fs=roleOf(b.type)==="rack"?(b.w<4&&b.h<4||Math.min(b.w,b.h)<4?0.32:0.38):b.w<=2?0.4:0.46;
+  const by=b.y+hb,bh=b.h-hb,lh=fs*1.35,y0=by+bh/2-(lines.length-1)*lh/2;
+  let t=`<g class="blk t-${roleOf(b.type)} d-${b.type}${sl?" sel":""}${cls}" data-block="${b.id}"${T&&T.color?` style="--dc:${T.color}"`:""}>`+
+    `<rect class="body" x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" rx="0.12"/>`+
+    `<rect class="head" x="${b.x}" y="${b.y}" width="${b.w}" height="${hb}" rx="0.12"/>`+
+    `<rect class="head" x="${b.x}" y="${b.y+hb/2}" width="${b.w}" height="${hb/2}"/>`+
+    `<text class="nm" x="${cx}" y="${b.y+hb/2}" font-size="${Math.min(0.52,hb*0.62)}">${esc(b.name)}</text>`+extra;
+  lines.forEach((l,i)=>{t+=`<text class="${l[1]}" x="${cx}" y="${y0+i*lh}" font-size="${fs}">${esc(l[0])}</text>`;});
+  return t+"</g>";
+}
+function renderWorld(){
+  const hl=hlSet();
+  let h="";
+  for(const c of S.cables){
+    const d="M"+c.pts.map(p=>p[0]+" "+p[1]).join(" L");
+    const cls=["cable",c.kind];
+    if(A.bad.has(c.id))cls.push("bad");
+    if(selC(c.id))cls.push("sel");
+    if(hl)cls.push(hl.path.has(c.id)?"hl":"dim");
+    h+=`<g data-cable="${c.id}"><path class="hit" d="${d}"/><path class="${cls.join(" ")}" d="${d}"/>`;
+    for(const [p,att] of [[c.pts[0],c.a],[c.pts[c.pts.length-1],c.b]])h+=`<circle class="end ${c.kind}${att?"":" loose"}" cx="${p[0]}" cy="${p[1]}" r="${att?0.11:0.16}"/>`;
+    h+="</g>";
+  }
+  const zones=new Set();
+  for(const id of selLists().blocks){const sb=getB(id);if(sb&&roleOf(sb.type)==="cooler")zones.add(sb.id);}
+  if(hl)(A.rackMap.get(hl.id).coolerIds||[]).forEach(id=>zones.add(id));
+  for(const id of zones){const cb=getB(id);if(!cb)continue;const z=reachRect(cb,stat(cb.type,"reach"));h+=`<rect class="reach" x="${z.x}" y="${z.y}" width="${z.w}" height="${z.h}"/>`;}
+  for(const b of S.blocks)h+=blockSVG(b,hl);
+  content.innerHTML=h;
+}
+function ghost(w){
+  const t=TYPES[placeType],gw=placeRot?t.h:t.w,gh=placeRot?t.w:t.h;
+  const x=Math.max(0,Math.min(GW-gw,Math.round(w[0]-gw/2))),y=Math.max(0,Math.min(GH-gh,Math.round(w[1]-gh/2)));
+  return {x,y,w:gw,h:gh,ok:fits(null,x,y,gw,gh)};
+}
+function fits(id,x,y,w,h){
+  if(x<0||y<0||x+w>GW||y+h>GH)return false;
+  const r={x,y,w,h};return !S.blocks.some(b=>b.id!==id&&overlap(r,b));
+}
+function renderOverlay(){
+  let h="";
+  if(marq)h+=`<rect class="marq" x="${Math.min(marq.x0,marq.x1)}" y="${Math.min(marq.y0,marq.y1)}" width="${Math.abs(marq.x1-marq.x0)}" height="${Math.abs(marq.y1-marq.y0)}"/>`;
+  if(hover&&mode==="place"){const g=ghost(hover);
+    if(roleOf(placeType)==="cooler"){const z=reachRect(g,stat(placeType,"reach"));h+=`<rect class="reach" x="${z.x}" y="${z.y}" width="${z.w}" height="${z.h}"/>`;}
+    h+=`<rect class="ghost${g.ok?"":" bad"}" x="${g.x}" y="${g.y}" width="${g.w}" height="${g.h}" rx="0.12"/><text class="ghostlbl" x="${g.x+g.w/2}" y="${g.y+g.h/2}" font-size="0.45">${g.w}×${g.h}</text>`;}
+  if(mode==="cable"){
+    if(drawing)h+=`<path class="draft ${drawing.kind}" d="M${drawing.pts.map(p=>p.join(" ")).join(" L")}"/>`;
+    if(hover){
+      const ex=drawing&&drawing.a?drawing.a.block:null;
+      const tg=findAttach(S,hover,ex);
+      if(drawing){const last=drawing.pts[drawing.pts.length-1];
+        const nxt=tg?[...diagFirst(last,stubOf(tg.pt,edgeNormal(tg.b,tg.pt[0]-tg.b.x,tg.pt[1]-tg.b.y))),tg.pt]:[last,constrain(last,hover)];
+        if(nxt.length>1)h+=`<path class="draft next ${drawing.kind}" d="M${nxt.map(p=>p.join(" ")).join(" L")}"/>`;}
+      if(tg)h+=`<rect class="tgt" x="${tg.b.x}" y="${tg.b.y}" width="${tg.b.w}" height="${tg.b.h}" rx="0.12"/><circle class="snap" cx="${tg.pt[0]}" cy="${tg.pt[1]}" r="0.15"/>`;
+      else{const p=drawing?constrain(drawing.pts[drawing.pts.length-1],hover):[q4(hover[0]),q4(hover[1])];h+=`<circle class="snap free" cx="${p[0]}" cy="${p[1]}" r="0.13"/>`;}
+    }
+  }
+  overlay.innerHTML=h;
+  renderHint();
+}
+function renderHint(){
+  let t;
+  if(mode==="place")t=`Click to place a ${TYPES[placeType].label.toLowerCase()} (${placeRot?TYPES[placeType].h:TYPES[placeType].w}×${placeRot?TYPES[placeType].w:TYPES[placeType].h}). R rotates, Esc stops placing.`;
+  else if(mode==="cable")t=drawing?"Click to add a bend (0°, 45° or 90°, on the ¼ grid). Click another block’s edge to finish. Backspace removes a bend, Esc cancels.":`Click a block’s edge to start a ${cableKind==="power"?"power":"network"} cable.`;
+  else t="Drag on empty floor to select an area, Shift-click to add or remove. Drag a selected block to move the selection. Ctrl+C and Ctrl+V copy and paste. Right-drag or Space-drag to pan, scroll to zoom.";
+  hintEl.innerHTML=`<span>${t}</span>`;
+}
+function renderTools(){
+  const tool=(m,label,key,icon,on)=>`<button class="tb${on?" on":""}" data-tool="${m}" title="${label} (${key})">${icon}${label}<span class="k">${key}</span></button>`;
+  let h=tool("select","Select","V","",mode==="select");
+  h+=`<button class="tb${mode==="place"?" on":""}" data-act="devmenu" title="Add device (A)" aria-haspopup="listbox" aria-expanded="${menuOpen()}">${mode==="place"?swatchHTML(placeType)+esc(TYPES[placeType].short):"Add device"}<span class="k">▾</span></button>`;
+  h+=tool("cable:power","Power","P",`<span class="sw line" style="color:var(--power)"></span>`,mode==="cable"&&cableKind==="power");
+  h+=tool("cable:data","Network","N",`<span class="sw line" style="color:var(--data)"></span>`,mode==="cable"&&cableKind==="data");
+  toolsEl.innerHTML=h;
+  document.querySelector('[data-act="undo"]').disabled=!hist.length;
+  document.querySelector('[data-act="redo"]').disabled=!redoStack.length;
+  const hasSel=!!(sel&&sel.kind==="block");
+  document.querySelector('[data-act="rotate"]').disabled=!(hasSel||mode==="place");
+  document.querySelector('[data-act="delete"]').disabled=!sel;
+  document.querySelector('[data-act="copy"]').disabled=!sel;
+  document.querySelector('[data-act="paste"]').disabled=!clip;
+  svg.classList.toggle("m-place",mode==="place");svg.classList.toggle("m-cable",mode==="cable");
+}
+/* Add device menu */
+const CATS=["Compute","Power","Cooling","Network"];
+const devmenu=document.getElementById("devmenu"),devq=document.getElementById("devq"),devlist=document.getElementById("devlist");
+let menuIdx=0,menuItems=[];
+function swatchHTML(k){const t=TYPES[k],sc=3.2*Math.min(1,5/Math.max(t.w,t.h));return `<span class="sw" style="width:${t.w*sc}px;height:${t.h*sc}px;color:${t.color||`var(--${roleOf(k)},var(--muted))`}"></span>`;}
+function menuOpen(){return !devmenu.hidden;}
+function renderDevList(){
+  const q=devq.value.trim().toLowerCase();
+  const items=Object.entries(TYPES).filter(([k,t])=>!q||`${t.label} ${t.short} ${t.cat||""}`.toLowerCase().includes(q));
+  const cats=[...new Set([...CATS,...items.map(([,t])=>t.cat||"Other")])];
+  menuItems=[];let h="";
+  for(const c of cats){const its=items.filter(([,t])=>(t.cat||"Other")===c);if(!its.length)continue;
+    h+=`<div class="mcat">${esc(c)}</div>`;
+    for(const [k,t] of its){const i=menuItems.length;menuItems.push(k);
+      h+=`<button class="mi${i===menuIdx?" act":""}" role="option" aria-selected="${i===menuIdx}" data-tool="place:${k}"><span class="swb">${swatchHTML(k)}</span><span>${esc(t.label)}</span><span class="sz">${t.w}×${t.h}${t.key?" · key "+t.key:""}</span></button>`;}}
+  devlist.innerHTML=h||`<p class="note" style="padding:4px 8px">No device matches “${esc(devq.value)}”.</p>`;
+  const act=devlist.querySelector(".mi.act");if(act)act.scrollIntoView({block:"nearest"});
+}
+function openMenu(){
+  const btn=document.querySelector('[data-act="devmenu"]'),r=btn.getBoundingClientRect();
+  devmenu.style.left=Math.max(8,Math.min(r.left,window.innerWidth-290))+"px";devmenu.style.top=(r.bottom+6)+"px";
+  devq.value="";menuIdx=mode==="place"?Math.max(0,Object.keys(TYPES).indexOf(placeType)):0;
+  devmenu.hidden=false;renderDevList();menuIdx=Math.max(0,menuItems.indexOf(placeType));renderDevList();
+  devq.focus();btn.setAttribute("aria-expanded","true");
+}
+function closeMenu(){if(!menuOpen())return;devmenu.hidden=true;const btn=document.querySelector('[data-act="devmenu"]');if(btn)btn.setAttribute("aria-expanded","false");}
+devq.addEventListener("input",()=>{menuIdx=0;renderDevList();});
+devq.addEventListener("keydown",e=>{
+  if(e.key==="ArrowDown"){e.preventDefault();menuIdx=Math.min(menuItems.length-1,menuIdx+1);renderDevList();}
+  else if(e.key==="ArrowUp"){e.preventDefault();menuIdx=Math.max(0,menuIdx-1);renderDevList();}
+  else if(e.key==="Enter"){e.preventDefault();if(menuItems[menuIdx]){setMode("place:"+menuItems[menuIdx]);closeMenu();}}
+  else if(e.key==="Escape"){e.preventDefault();closeMenu();}
+});
+document.addEventListener("pointerdown",e=>{if(menuOpen()&&!devmenu.contains(e.target)&&!e.target.closest('[data-act="devmenu"]'))closeMenu();});
+window.addEventListener("resize",closeMenu);
+function setMode(m){
+  drawing=null;
+  if(m.startsWith("place:")){mode="place";placeType=m.slice(6);placeRot=false;}
+  else if(m.startsWith("cable:")){mode="cable";cableKind=m.slice(6);}
+  else mode="select";
+  renderTools();renderOverlay();
+}
+
+function renderSide(){
+  let h="";
+  /* selection */
+  if(sel){
+    if(sel.kind==="multi"){const l=selLists(),cnt={};for(const id of l.blocks){const t=getB(id).type;cnt[t]=(cnt[t]||0)+1;}
+      const parts=Object.entries(cnt).map(([t,n])=>`${n} × ${esc(TYPES[t]?TYPES[t].label:t)}`);
+      if(l.cables.length)parts.push(`${l.cables.length} cable${l.cables.length===1?"":"s"}`);
+      h+=`<section><h2>${l.blocks.length+l.cables.length} selected</h2><p class="note" style="margin-top:0">${parts.join(", ")}. Drag any selected block to move them together.</p><div class="btns"><button class="btn danger" data-act="delete">Delete selected</button></div></section>`;
+    }else if(sel.kind==="block"){const b=getB(sel.id),t=TYPES[b.type];
+      h+=`<section><h2>${esc(b.name)} <small>${t.label}, ${b.w}×${b.h}</small></h2><div class="prop">
+        <label for="pname">Name</label><input id="pname" data-name="${b.id}" value="${esc(b.name)}">
+        <span class="muted">Position</span><span>${b.x}, ${b.y}</span></div>`;
+      if(roleOf(b.type)==="rack"){const r=A.rackMap.get(b.id);
+        h+=`<p class="note">Fed by ${r.feeds.length?r.feeds.map(f=>`${esc(f.name)}${f.chains.length?" (chain "+f.chains.join(", ")+")":" (no UPS)"}`).join(" and "):"nothing yet"}. Power with 0, 1 or 2 of its PDUs failed: ${r.P.map(v=>fmt(v)).join(" / ")} kW.${r.coolShares.length?" Cooled by "+r.coolShares.map(s=>`${esc(s.name)} (${fmt(s.kw)} kW)`).join(" and ")+".":" No Twin Aisle Cooler reaches it."}</p>`;}
+      if(roleOf(b.type)==="cooler"){const ids=A.coolerCovers.get(b.id)||[];h+=`<p class="note">Reaches ${ids.length} rack${ids.length===1?"":"s"}${ids.length?": "+ids.map(id=>esc(getB(id).name)).join(", ")+`, ${fmt(stat(b.type,"kW")/ids.length)} kW each`:""}. The shaded band is its reach, ${stat(b.type,"reach")} cells to each side.</p>`;}
+      if(roleOf(b.type)==="ups"){const ch=A.chainOf.get(b.id);h+=`<p class="note">Part of ${ch.name}: ${ch.units.map(u=>esc(u.name)).join(", ")}.</p>`;}
+      h+=`<div class="btns"><button class="btn" data-act="rotate">Rotate</button><button class="btn danger" data-act="delete">Delete</button></div></section>`;
+    }else{const c=getC(sel.id),a=c.a&&getB(c.a.block),b=c.b&&getB(c.b.block);
+      h+=`<section><h2>Cable <small>${a?esc(a.name):"loose end"} to ${b?esc(b.name):"loose end"}</small></h2><div class="prop">
+        <label for="pkind">Type</label><select id="pkind" data-kind="${c.id}"><option value="power"${c.kind==="power"?" selected":""}>Power</option><option value="data"${c.kind==="data"?" selected":""}>Network</option></select></div>
+        <div class="btns"><button class="btn danger" data-act="delete">Delete cable</button></div></section>`;
+    }
+  }
+  /* chains */
+  h+=`<section><h2>UPS chains <small>${fmt(A.totalCap)} kW total</small></h2>`;
+  if(!A.chains.length)h+=`<p class="note">No UPS placed yet. Join UPS units with power cables to form a chain.</p>`;
+  else{h+=`<ul class="plain">`;
+    for(const ch of A.chains)h+=`<li><b>${ch.name}</b>: ${ch.size} UPS, <b${ch.valid?"":' class="c-none"'}>${fmt(ch.cap)} kW</b>${ch.pdus.size?" to "+[...ch.pdus].map(id=>esc(getB(id).name)).sort(natural).join(", "):", not feeding a PDU"}</li>`;
+    h+=`</ul>`;}
+  h+=`</section>`;
+  /* issues */
+  h+=`<section><h2>Checks <small>${A.issues.length?A.issues.length+" to look at":"all clear"}</small></h2>`;
+  if(A.issues.length){h+=`<ul class="plain iss">`;for(const i of A.issues)h+=`<li class="${i.sev}"${i.cable?` data-cable="${i.cable}"`:""}><span class="ic"></span><span>${esc(i.msg)}</span></li>`;h+=`</ul>`;}
+  else h+=`<p class="note">Every cable is connected and every power path is valid.</p>`;
+  h+=`</section>`;
+  /* ratings */
+  const rated=Object.values(TYPES).filter(t=>Object.keys(BEHAVIORS[t.behavior].stats).length);
+  const selType=sel&&sel.kind==="block"&&getB(sel.id)?getB(sel.id).type:null;
+  if(selType&&rated.some(t=>t.id===selType))ratingDev=selType;
+  if(!rated.some(t=>t.id===ratingDev))ratingDev=rated.length?rated[0].id:null;
+  h+=`<section><h2>Equipment ratings</h2>`;
+  if(ratingDev){const T=TYPES[ratingDev],bs=BEHAVIORS[T.behavior].stats,base=T.custom?(S.devices.find(d=>d.id===T.id)||{}).stats||{}:(BUILTIN_DEVICES.find(d=>d.id===T.id).stats||{});
+    h+=`<select id="r-dev" class="rsel" aria-label="Device to rate" data-ratingdev="1">${rated.map(t=>`<option value="${t.id}"${t.id===ratingDev?" selected":""}>${esc(t.label)}</option>`).join("")}</select><div class="form">`;
+    for(const [k,sd] of Object.entries(bs))h+=`<label for="r-${k}">${esc(sd.label)}</label><input id="r-${k}" type="number" step="${sd.step||1}" min="${sd.min}" data-stat="${T.id}|${k}" value="${stat(T.id,k)}">`;
+    h+=`</div>`;
+    const changed=S.overrides[T.id]&&Object.keys(S.overrides[T.id]).length;
+    if(T.behavior==="ups")h+=`<p class="note">A full chain of ${stat(T.id,"chainMax")} gives ${fmt(stat(T.id,"chainMax")*stat(T.id,"kW"))} kW.</p>`;
+    if(T.behavior==="pdu")h+=`<p class="note">${fmt(stat(T.id,"kW"))} kW is ${Math.round(stat(T.id,"kW")*1000/230)} A at 230 V.</p>`;
+    if(changed)h+=`<div class="btns"><button class="btn" data-act="resetrating">Reset ${esc(T.label)} to default</button></div>`;
+  }
+  h+=`<div class="btns"><button class="btn" data-act="lib">Manage devices</button></div></section>`;
+  h+=`<section><details><summary>How it’s calculated</summary>
+    <p>Power flows UPS chain → PDU → rack. UPS units joined by power cables form one chain whose output is the sum of its units, up to the chain limit. A UPS can’t feed a rack directly; it has to go through a PDU.</p>
+    <p>Each UPS chain’s output is divided evenly between the racks it reaches. A rack fed from one chain through two of its PDUs takes the same share as one fed through one. The 1 and 2 failed columns are the worst case when that many of the rack’s own PDUs fail; the chain’s output is then shared between the racks still connected. Each PDU passes at most its capacity; if its racks’ shares add up to more, they’re scaled down.</p>
+    <p>Each cooler splits its cooling evenly between the racks in its row whose centre is within its reach (measured from the cooler’s centre, across its short side). A rack’s cooling is the sum of its shares. Usable is the lower of power and cooling. Coolers and network switches don’t need power cables.</p>
+    <p>Cables attach where they touch a block’s edge, leave it straight out for at least ¼ cell, and run at 0°, 45° or 90° on a ¼-cell grid. Moving or rotating a block re-routes the cable ends that touch it.</p>
+    <p>Shortcuts: A add device, V select, Ctrl+A select all, Shift-click to add to a selection, Ctrl+C copy, Ctrl+X cut, Ctrl+V paste at the cursor, Ctrl+D duplicate, P power cable, N network cable, R rotate, Del delete, F fit, Ctrl+Z undo, space-drag to pan.</p>
+  </details></section>`;
+  side.innerHTML=h;
+}
+
+/* actions */
+function addBlock(type,x,y,w,h){
+  const t=TYPES[type];
+  const re=new RegExp("^"+t.prefix+"(\\d+)$");let n=0;
+  for(const b of S.blocks){const m=re.exec(b.name);if(m)n=Math.max(n,+m[1]);}
+  S.blocks.push({id:nid("b"),type,x,y,w,h,name:t.prefix+(n+1)});commit();
+}
+function snapshot(id){const m=new Map();for(const c of S.cables)if((c.a&&c.a.block===id)||(c.b&&c.b.block===id))m.set(c.id,c.pts.map(p=>p.slice()));return m;}
+function endPos(att){const b=getB(att.block);return [b.x+att.ox,b.y+att.oy];}
+function attNormal(att){const b=getB(att.block);return b?edgeNormal(b,att.ox,att.oy):null;}
+function updateAttached(id,snap){
+  for(const c of S.cables){if(!snap.has(c.id))continue;
+    const ns=c.a&&c.a.block===id?endPos(c.a):null,ne=c.b&&c.b.block===id?endPos(c.b):null;
+    c.pts=simplify(reroute(snap.get(c.id),ns,ne,c.a&&attNormal(c.a),c.b&&attNormal(c.b)));if(c.pts.length<2)c.pts=[ns||ne,(ns||ne).slice()];}
+}
+function rotateSel(){
+  if(mode==="place"){placeRot=!placeRot;renderOverlay();return;}
+  if(!sel||sel.kind!=="block")return;
+  const b=getB(sel.id),nw=b.h,nh=b.w;
+  if(!fits(b.id,b.x,b.y,nw,nh)){toast(`No room to rotate ${b.name} here`);return;}
+  const snap=snapshot(b.id);
+  for(const c of S.cables)for(const att of [c.a,c.b])if(att&&att.block===b.id){const ox=att.ox;att.ox=b.h-att.oy;att.oy=ox;}
+  b.w=nw;b.h=nh;updateAttached(b.id,snap);commit();
+}
+function deleteSel(){
+  if(!sel)return;
+  const l=selLists(),bs=new Set(l.blocks),cs=new Set(l.cables);
+  S.cables=S.cables.filter(c=>!cs.has(c.id)&&!((c.a&&bs.has(c.a.block))||(c.b&&bs.has(c.b.block))));
+  S.blocks=S.blocks.filter(b=>!bs.has(b.id));
+  sel=null;commit();
+}
+function select(x){sel=x;renderWorld();renderSide();renderTools();renderResults();}
+function mkSel(bs,cs){
+  bs=[...new Set(bs)];cs=[...new Set(cs)];
+  if(!bs.length&&!cs.length)return null;
+  if(bs.length===1&&!cs.length)return {kind:"block",id:bs[0]};
+  if(!bs.length&&cs.length===1)return {kind:"cable",id:cs[0]};
+  return {kind:"multi",blocks:bs,cables:cs};
+}
+function selLists(){
+  if(!sel)return {blocks:[],cables:[]};
+  if(sel.kind==="block")return {blocks:[sel.id],cables:[]};
+  if(sel.kind==="cable")return {blocks:[],cables:[sel.id]};
+  return {blocks:sel.blocks.slice(),cables:sel.cables.slice()};
+}
+function selB(id){return selLists().blocks.includes(id);}
+function selC(id){return selLists().cables.includes(id);}
+function toggleIn(arr,id){const i=arr.indexOf(id);if(i<0)arr.push(id);else arr.splice(i,1);return arr;}
+function copySel(){
+  const l=selLists(),bs=new Set(l.blocks),cs=new Set(l.cables);
+  if(!bs.size&&!cs.size){toast("Select something to copy first");return false;}
+  const blocks=S.blocks.filter(b=>bs.has(b.id)).map(b=>({...b}));
+  const cables=S.cables.filter(c=>{const okA=c.a?bs.has(c.a.block):true,okB=c.b?bs.has(c.b.block):true;return okA&&okB&&((c.a&&c.b)||cs.has(c.id));}).map(c=>JSON.parse(JSON.stringify(c)));
+  if(!blocks.length&&!cables.length){toast("A cable is copied together with the blocks at both of its ends");return false;}
+  clip={blocks,cables,n:0};renderTools();
+  toast(`Copied ${blocks.length} block${blocks.length===1?"":"s"}${cables.length?` and ${cables.length} cable${cables.length===1?"":"s"}`:""}`);
+  return true;
+}
+function nextName(name,taken){
+  const m=/^(.*?)(\d+)$/.exec(name);
+  if(!m){let n=2,v=name+" copy";while(taken.has(v))v=`${name} copy ${n++}`;return v;}
+  let mx=0;
+  for(const t of taken)if(t.startsWith(m[1])){const r=/^\d+$/.exec(t.slice(m[1].length));if(r)mx=Math.max(mx,+r[0]);}
+  return m[1]+(mx+1);
+}
+function pasteClip(atCursor){
+  if(!clip){toast("Copy something first");return;}
+  const P=[...clip.blocks.flatMap(b=>[[b.x,b.y],[b.x+b.w,b.y+b.h]]),...clip.cables.flatMap(c=>c.pts)];
+  const x0=Math.floor(Math.min(...P.map(p=>p[0]))),y0=Math.floor(Math.min(...P.map(p=>p[1]))),x1=Math.ceil(Math.max(...P.map(p=>p[0]))),y1=Math.ceil(Math.max(...P.map(p=>p[1])));
+  let tx,ty;
+  if(atCursor&&hover){tx=Math.round(hover[0]-(x1-x0)/2);ty=Math.round(hover[1]-(y1-y0)/2);}
+  else{clip.n++;tx=x0+2*clip.n;ty=y0+2*clip.n;}
+  const ok=(dx,dy)=>{
+    if(x0+dx<0||y0+dy<0||x1+dx>GW||y1+dy>GH)return false;
+    return clip.blocks.every(b=>{const r={x:b.x+dx,y:b.y+dy,w:b.w,h:b.h};return !S.blocks.some(o=>overlap(r,o));});
+  };
+  let found=null;
+  for(let rad=0;rad<=80&&!found;rad++)
+    for(let i=-rad;i<=rad&&!found;i++)for(let j=-rad;j<=rad;j++){
+      if(Math.max(Math.abs(i),Math.abs(j))!==rad)continue;
+      const dx=tx-x0+i,dy=ty-y0+j;if(ok(dx,dy)){found=[dx,dy];break;}
+    }
+  if(!found){toast("There’s no free space big enough to paste this");return;}
+  const [dx,dy]=found,idm=new Map(),taken=new Set(S.blocks.map(b=>b.name)),nb=[],nc=[];
+  for(const b of clip.blocks){const id=nid("b"),name=nextName(b.name,taken);taken.add(name);idm.set(b.id,id);S.blocks.push({...b,id,name,x:b.x+dx,y:b.y+dy});nb.push(id);}
+  for(const c of clip.cables){const id=nid("c"),m=a=>a?{block:idm.get(a.block),ox:a.ox,oy:a.oy}:null;S.cables.push({id,kind:c.kind,pts:c.pts.map(p=>[p[0]+dx,p[1]+dy]),a:m(c.a),b:m(c.b)});nc.push(id);}
+  setMode("select");sel=mkSel(nb,nc);commit();
+  toast("Pasted. Drag it into place.");
+}
+function startDrag(id,w){
+  const l=selLists(),ids=new Set(l.blocks);ids.add(id);
+  const lead=getB(id),orig=new Map(),snap=new Map(),selCs=new Set(l.cables);
+  for(const bid of ids){const b=getB(bid);orig.set(bid,[b.x,b.y]);}
+  for(const c of S.cables)if((c.a&&ids.has(c.a.block))||(c.b&&ids.has(c.b.block))||selCs.has(c.id))snap.set(c.id,c.pts.map(p=>p.slice()));
+  drag={lead:id,gx:w[0]-lead.x,gy:w[1]-lead.y,ids,orig,snap,selCs,dx:0,dy:0,moved:false};
+}
+function dragTo(w){
+  const d=drag,[lx,ly]=d.orig.get(d.lead);
+  let dx=Math.round(w[0]-d.gx)-lx,dy=Math.round(w[1]-d.gy)-ly;
+  let minDx=-Infinity,maxDx=Infinity,minDy=-Infinity,maxDy=Infinity;
+  for(const id of d.ids){const b=getB(id),[ox,oy]=d.orig.get(id);minDx=Math.max(minDx,-ox);maxDx=Math.min(maxDx,GW-b.w-ox);minDy=Math.max(minDy,-oy);maxDy=Math.min(maxDy,GH-b.h-oy);}
+  dx=Math.max(minDx,Math.min(maxDx,dx));dy=Math.max(minDy,Math.min(maxDy,dy));
+  if(dx===d.dx&&dy===d.dy)return;
+  const others=S.blocks.filter(b=>!d.ids.has(b.id));
+  for(const id of d.ids){const b=getB(id),[ox,oy]=d.orig.get(id),r={x:ox+dx,y:oy+dy,w:b.w,h:b.h};if(others.some(o=>overlap(r,o)))return;}
+  for(const id of d.ids){const b=getB(id),[ox,oy]=d.orig.get(id);b.x=ox+dx;b.y=oy+dy;}
+  d.dx=dx;d.dy=dy;d.moved=dx!==0||dy!==0;
+  for(const c of S.cables){
+    const s=d.snap.get(c.id);if(!s)continue;
+    const inA=c.a?d.ids.has(c.a.block):d.selCs.has(c.id),inB=c.b?d.ids.has(c.b.block):d.selCs.has(c.id);
+    if(inA&&inB){c.pts=s.map(p=>[p[0]+dx,p[1]+dy]);continue;}
+    const ns=c.a&&d.ids.has(c.a.block)?endPos(c.a):null,ne=c.b&&d.ids.has(c.b.block)?endPos(c.b):null;
+    if(!ns&&!ne){c.pts=s.map(p=>p.slice());continue;}
+    c.pts=simplify(reroute(s,ns,ne,c.a&&attNormal(c.a),c.b&&attNormal(c.b)));if(c.pts.length<2)c.pts=[ns||ne,(ns||ne).slice()];
+  }
+  renderWorld();
+}
+function finishMarquee(){
+  const m=marq;marq=null;
+  const x0=Math.min(m.x0,m.x1),x1=Math.max(m.x0,m.x1),y0=Math.min(m.y0,m.y1),y1=Math.max(m.y0,m.y1);
+  if(x1-x0<0.15&&y1-y0<0.15){if(!m.add&&sel)select(null);renderOverlay();return;}
+  const box={x:x0,y:y0,w:x1-x0,h:y1-y0};
+  const inR=p=>p[0]>=x0-1e-6&&p[0]<=x1+1e-6&&p[1]>=y0-1e-6&&p[1]<=y1+1e-6;
+  const bs=S.blocks.filter(b=>overlap(box,b)).map(b=>b.id);
+  const cs=S.cables.filter(c=>c.pts.every(inR)).map(c=>c.id);
+  select(m.add?mkSel(m.base.blocks.concat(bs),m.base.cables.concat(cs)):mkSel(bs,cs));
+  renderOverlay();
+}
+function finishCable(endAtt){
+  const pts=simplify(fixStubs(simplify(drawing.pts),drawing.a&&attNormal(drawing.a),endAtt&&attNormal(endAtt)));
+  if(pts.length>=2){S.cables.push({id:nid("c"),kind:drawing.kind,pts,a:drawing.a,b:endAtt});drawing=null;commit();}
+  else{drawing=null;renderOverlay();}
+}
+function cableClick(w){
+  if(!drawing){
+    const tg=findAttach(S,w,null);
+    if(tg){const ox=tg.pt[0]-tg.b.x,oy=tg.pt[1]-tg.b.y;drawing={kind:cableKind,pts:[tg.pt,stubOf(tg.pt,edgeNormal(tg.b,ox,oy))],a:{block:tg.b.id,ox,oy}};}
+    else drawing={kind:cableKind,pts:[[q4(w[0]),q4(w[1])]],a:null};
+    renderOverlay();return;
+  }
+  const last=drawing.pts[drawing.pts.length-1];
+  const tg=findAttach(S,w,drawing.a?drawing.a.block:null);
+  if(tg){const ox=tg.pt[0]-tg.b.x,oy=tg.pt[1]-tg.b.y;drawing.pts.push(...diagFirst(last,stubOf(tg.pt,edgeNormal(tg.b,ox,oy))).slice(1),tg.pt);finishCable({block:tg.b.id,ox,oy});return;}
+  const p=constrain(last,w);if(!samePt(p,last))drawing.pts.push(p);renderOverlay();
+}
+
+/* pointer */
+function toWorld(e){const r=svg.getBoundingClientRect();return [(e.clientX-r.left-view.tx)/view.s,(e.clientY-r.top-view.ty)/view.s];}
+svg.addEventListener("contextmenu",e=>e.preventDefault());
+svg.addEventListener("pointerdown",e=>{
+  const w=toWorld(e);hover=w;
+  if(e.button===1||e.button===2||spaceDown){pan={x:e.clientX,y:e.clientY,tx:view.tx,ty:view.ty};svg.setPointerCapture(e.pointerId);svg.classList.add("panning");e.preventDefault();return;}
+  if(e.button!==0)return;
+  if(mode==="place"){const g=ghost(w);if(g.ok)addBlock(placeType,g.x,g.y,g.w,g.h);else toast("That spot overlaps another block");return;}
+  if(mode==="cable"){cableClick(w);return;}
+  const bEl=e.target.closest("[data-block]"),cEl=e.target.closest("[data-cable]");
+  const add=e.shiftKey||e.ctrlKey||e.metaKey;
+  if(bEl){const id=bEl.dataset.block;
+    if(add){const l=selLists();select(mkSel(toggleIn(l.blocks,id),l.cables));return;}
+    if(!selB(id))select({kind:"block",id});
+    startDrag(id,w);svg.setPointerCapture(e.pointerId);return;}
+  if(cEl){const id=cEl.dataset.cable;
+    if(add){const l=selLists();select(mkSel(l.blocks,toggleIn(l.cables,id)));}else select({kind:"cable",id});
+    return;}
+  if(e.pointerType==="touch"){if(sel)select(null);pan={x:e.clientX,y:e.clientY,tx:view.tx,ty:view.ty};svg.setPointerCapture(e.pointerId);svg.classList.add("panning");return;}
+  marq={x0:w[0],y0:w[1],x1:w[0],y1:w[1],add,base:selLists()};svg.setPointerCapture(e.pointerId);
+});
+svg.addEventListener("pointermove",e=>{
+  hover=toWorld(e);
+  if(pan){view.tx=pan.tx+e.clientX-pan.x;view.ty=pan.ty+e.clientY-pan.y;applyView();return;}
+  if(marq){marq.x1=hover[0];marq.y1=hover[1];renderOverlay();return;}
+  if(drag){dragTo(hover);return;}
+  if(mode!=="select")renderOverlay();
+});
+function endPointer(){if(marq)finishMarquee();if(drag&&drag.moved){drag=null;commit();}drag=null;if(pan){pan=null;svg.classList.remove("panning");}}
+svg.addEventListener("pointerup",endPointer);svg.addEventListener("pointercancel",endPointer);
+svg.addEventListener("pointerleave",()=>{if(!drag&&!pan&&!marq){hover=null;renderOverlay();}});
+svg.addEventListener("dblclick",()=>{if(mode==="cable"&&drawing)finishCable(null);});
+svg.addEventListener("wheel",e=>{e.preventDefault();const r=svg.getBoundingClientRect();zoomAt(Math.exp(-e.deltaY*0.0015),e.clientX-r.left,e.clientY-r.top);},{passive:false});
+
+/* buttons */
+document.addEventListener("click",e=>{
+  const t=e.target.closest("[data-tool]");if(t){setMode(t.dataset.tool);closeMenu();return;}
+  const a=e.target.closest("[data-act]");
+  if(a){const act=a.dataset.act,r=svg.getBoundingClientRect();
+    if(act==="devmenu"){menuOpen()?closeMenu():openMenu();return;}
+    if(act==="rotate")rotateSel();else if(act==="delete")deleteSel();
+    else if(act==="copy")copySel();else if(act==="paste")pasteClip(false);
+    else if(act==="undo")undo();else if(act==="redo")redo();
+    else if(act==="fit")fit();
+    else if(act==="zin")zoomAt(1.25,r.width/2,r.height/2);else if(act==="zout")zoomAt(0.8,r.width/2,r.height/2);
+    else if(act==="example"){S={...demoState(),devices:S.devices,overrides:S.overrides};sel=null;drawing=null;commit();fit();toast("Example loaded. Undo brings your layout back.");}
+    else if(act==="clear"){S={...S,blocks:[],cables:[]};sel=null;drawing=null;commit();toast("Cleared. Undo brings it back.");}
+    else if(act==="lib"){closeMenu();openLib();}
+    else if(act==="resetrating"){delete S.overrides[ratingDev];commit();}
+    else if(act==="io"){document.getElementById("iotext").value=JSON.stringify(S,null,1);document.getElementById("io").showModal();}
+    return;}
+  const row=e.target.closest("tr[data-rack]");if(row){select({kind:"block",id:row.dataset.rack});return;}
+  const li=e.target.closest("li[data-cable]");if(li&&getC(li.dataset.cable)){select({kind:"cable",id:li.dataset.cable});}
+});
+const resultsEl=document.getElementById("results");
+resultsEl.addEventListener("mouseover",e=>{const tr=e.target.closest("tr[data-rack]");const id=tr?tr.dataset.rack:null;if(id!==hlRack){hlRack=id;renderWorld();}});
+resultsEl.addEventListener("mouseleave",()=>{if(hlRack){hlRack=null;renderWorld();}});
+side.addEventListener("mouseover",e=>{const tr=e.target.closest("tr[data-rack]");const id=tr?tr.dataset.rack:null;if(id!==hlRack){hlRack=id;renderWorld();}});
+side.addEventListener("mouseleave",()=>{if(hlRack){hlRack=null;renderWorld();}});
+side.addEventListener("change",e=>{
+  const el=e.target;
+  if(el.dataset.ratingdev){ratingDev=el.value;renderSide();}
+  else if(el.dataset.stat){const [id,k]=el.dataset.stat.split("|"),sd=BEHAVIORS[roleOf(id)].stats[k];let v=parseFloat(el.value);
+    if(!isFinite(v)||v<sd.min)v=sd.def;if(sd.int)v=Math.round(v);(S.overrides[id]=S.overrides[id]||{})[k]=v;commit();}
+  else if(el.dataset.name){const b=getB(el.dataset.name);const v=el.value.trim();if(b&&v){b.name=v.slice(0,24);commit();}}
+  else if(el.dataset.kind){const c=getC(el.dataset.kind);if(c){c.kind=el.value;commit();}}
+});
+document.getElementById("iocopy").onclick=async()=>{const ta=document.getElementById("iotext");try{await navigator.clipboard.writeText(ta.value);toast("Copied");}catch(e){ta.select();toast("Press Ctrl+C to copy");}};
+document.getElementById("ioload").onclick=()=>{try{const st=clean(JSON.parse(document.getElementById("iotext").value));S=st;sel=null;drawing=null;commit();document.getElementById("io").close();fit();toast("Layout loaded");}catch(e){toast("That isn’t a valid layout");}};
+document.getElementById("ioclose").onclick=()=>document.getElementById("io").close();
+
+/* Device library */
+const lib=document.getElementById("lib"),$=id=>document.getElementById(id);
+let colorTouched=false;
+function packJSON(){return JSON.stringify({format:PACK_FORMAT,version:1,devices:S.devices},null,1);}
+function defaultColor(beh){const v=getComputedStyle(document.documentElement).getPropertyValue("--"+beh).trim();return /^#[0-9a-f]{6}$/i.test(v)?v:"#6b7a88";}
+function openLib(){libEdit=null;fillForm(null);renderLib();$("packtext").value=packJSON();lib.showModal();}
+function renderLib(){
+  $("lf-cats").innerHTML=[...new Set(Object.values(TYPES).map(t=>t.cat||"Other"))].map(c=>`<option value="${esc(c)}">`).join("");
+  let h="";
+  for(const t of Object.values(TYPES)){const used=S.blocks.filter(b=>b.type===t.id).length;
+    h+=`<button type="button" class="lrow${libEdit===t.id?" cur":""}" data-libid="${t.id}"><span class="swb">${swatchHTML(t.id)}</span><span><b>${esc(t.label)}</b><br><span class="muted" style="font-size:13px">${esc(BEHAVIORS[t.behavior].label)}, ${t.w}×${t.h}</span></span><span class="meta">${t.custom?"Yours":"Built in"}${used?`<br>${used} placed`:""}</span></button>`;}
+  $("liblist").innerHTML=h;
+}
+function statFields(beh,vals){
+  $("lf-help").textContent=BEHAVIORS[beh].help+(libEdit?" Size changes apply to devices you place from now on.":"");
+  $("lf-stats").innerHTML=Object.entries(BEHAVIORS[beh].stats).map(([k,sd])=>`<label for="lf-s-${k}">${esc(sd.label)}</label><input id="lf-s-${k}" data-k="${k}" type="number" min="${sd.min}" step="${sd.step||1}" value="${vals&&vals[k]!=null?vals[k]:sd.def}">`).join("");
+}
+function fillForm(t,asCopy){
+  $("lf-beh").innerHTML=Object.entries(BEHAVIORS).map(([k,b])=>`<option value="${k}">${esc(b.label)}</option>`).join("");
+  const d=t||{label:"",short:"",cat:"",prefix:"",w:3,h:3,behavior:"rack",stats:{}};
+  $("lf-label").value=asCopy?d.label+" copy":d.label;
+  $("lf-short").value=!asCopy&&d.short&&d.short!==d.label?d.short:"";
+  $("lf-cat").value=d.cat||"";$("lf-prefix").value=asCopy?"":(d.prefix||"");
+  $("lf-w").value=d.w;$("lf-h").value=d.h;$("lf-beh").value=d.behavior;
+  colorTouched=!!d.color;$("lf-color").value=d.color||defaultColor(d.behavior);
+  statFields(d.behavior,d.stats);
+  $("libformtitle").textContent=libEdit?`Edit ${d.label}`:asCopy?`New device based on ${d.label}`:"New device";
+  $("lf-save").textContent=libEdit?"Save changes":"Add device";
+  $("lf-del").hidden=!libEdit;$("lf-err").textContent="";
+}
+$("lf-color").addEventListener("input",()=>{colorTouched=true;});
+$("lf-beh").addEventListener("change",()=>{statFields($("lf-beh").value,null);if(!colorTouched)$("lf-color").value=defaultColor($("lf-beh").value);});
+$("liblist").addEventListener("click",e=>{const r=e.target.closest("[data-libid]");if(!r)return;const t=TYPES[r.dataset.libid];
+  if(t.custom){libEdit=t.id;fillForm(t);}else{libEdit=null;fillForm(t,true);}renderLib();});
+$("lf-new").onclick=()=>{libEdit=null;fillForm(null);renderLib();$("lf-label").focus();};
+$("libform").addEventListener("submit",e=>{
+  e.preventDefault();
+  const stats={};$("lf-stats").querySelectorAll("input").forEach(i=>stats[i.dataset.k]=+i.value);
+  const raw={id:libEdit||undefined,label:$("lf-label").value,short:$("lf-short").value,cat:$("lf-cat").value,prefix:$("lf-prefix").value,
+    w:$("lf-w").value,h:$("lf-h").value,behavior:$("lf-beh").value,stats,color:colorTouched?$("lf-color").value:""};
+  let d;try{d=checkDevice(raw);}catch(m){$("lf-err").textContent=String(m);return;}
+  if(libEdit){
+    if(TYPES[libEdit].behavior!==d.behavior&&S.blocks.some(b=>b.type===libEdit)){$("lf-err").textContent="This device is placed on the floor, so what it works like can’t change. Start a new device instead.";return;}
+    d.id=libEdit;S.devices=S.devices.map(x=>x.id===libEdit?d:x);
+  }else{let id=d.id,n=2;while(TYPES[id])id=`${d.id}_${n++}`;d.id=id;S.devices=[...S.devices,d];libEdit=id;}
+  delete S.overrides[d.id];
+  commit();renderLib();fillForm(TYPES[libEdit]);$("packtext").value=packJSON();
+  toast(`${d.label} saved. It’s under ${d.cat} in Add device.`);
+});
+$("lf-del").onclick=()=>{
+  const used=S.blocks.filter(b=>b.type===libEdit).length;
+  if(used){$("lf-err").textContent=`${used} of these ${used===1?"is":"are"} placed on the floor. Delete ${used===1?"it":"them"} first.`;return;}
+  const name=TYPES[libEdit].label;S.devices=S.devices.filter(d=>d.id!==libEdit);delete S.overrides[libEdit];libEdit=null;
+  commit();fillForm(null);renderLib();$("packtext").value=packJSON();toast(`${name} deleted`);
+};
+$("packcopy").onclick=async()=>{const ta=$("packtext");try{await navigator.clipboard.writeText(ta.value);toast("Pack copied");}catch(e){ta.select();toast("Press Ctrl+C to copy");}};
+$("packload").onclick=()=>{
+  let data;try{data=JSON.parse($("packtext").value);}catch(e){toast("That pack isn’t valid JSON");return;}
+  const list=Array.isArray(data)?data:data&&Array.isArray(data.devices)?data.devices:null;
+  if(!list){toast("No devices found in that pack");return;}
+  const devs=[...S.devices];let added=0,updated=0;const errs=[];
+  for(const raw of list){
+    let d;try{d=checkDevice(raw);}catch(m){errs.push(String(m));continue;}
+    if(BUILTIN_IDS.has(d.id)){let id=d.id+"_pack",n=2;while(BUILTIN_IDS.has(id)||devs.some(x=>x.id===id))id=`${d.id}_pack${n++}`;d.id=id;}
+    const i=devs.findIndex(x=>x.id===d.id);
+    if(i>=0){if(devs[i].behavior!==d.behavior&&S.blocks.some(b=>b.type===d.id)){errs.push(`${d.label}: already placed with a different behaviour`);continue;}devs[i]=d;updated++;}
+    else{devs.push(d);added++;}
+  }
+  S.devices=devs;commit();renderLib();
+  toast(`Imported ${added} new and ${updated} updated device${added+updated===1?"":"s"}${errs.length?`. Skipped ${errs.length}: ${errs[0]}`:""}`);
+};
+$("libclose").onclick=()=>lib.close();
+
+/* keys */
+document.addEventListener("keydown",e=>{
+  if(e.target.closest&&e.target.closest("input,textarea,select")||document.getElementById("io").open||document.getElementById("lib").open)return;
+  const k=e.key.toLowerCase();
+  if((e.ctrlKey||e.metaKey)&&k==="z"){e.preventDefault();e.shiftKey?redo():undo();return;}
+  if((e.ctrlKey||e.metaKey)&&k==="y"){e.preventDefault();redo();return;}
+  if((e.ctrlKey||e.metaKey)&&k==="c"){if(String(window.getSelection())){return;}e.preventDefault();copySel();return;}
+  if((e.ctrlKey||e.metaKey)&&k==="x"){e.preventDefault();if(copySel())deleteSel();return;}
+  if((e.ctrlKey||e.metaKey)&&k==="v"){e.preventDefault();pasteClip(true);return;}
+  if((e.ctrlKey||e.metaKey)&&k==="d"){e.preventDefault();if(copySel())pasteClip(false);return;}
+  if((e.ctrlKey||e.metaKey)&&k==="a"){e.preventDefault();setMode("select");select(mkSel(S.blocks.map(b=>b.id),S.cables.map(c=>c.id)));return;}
+  if(e.ctrlKey||e.metaKey||e.altKey)return;
+  if(k===" "){spaceDown=true;e.preventDefault();return;}
+  if(k==="escape"){if(drawing){drawing=null;renderOverlay();}else if(mode!=="select")setMode("select");else if(sel)select(null);return;}
+  if(k==="enter"&&drawing){finishCable(null);return;}
+  if(k==="backspace"||k==="delete"){e.preventDefault();if(drawing){drawing.pts.pop();if(drawing.pts.length<(drawing.a?2:1))drawing=null;renderOverlay();}else deleteSel();return;}
+  if(k==="v"){setMode("select");return;}
+  if(k==="p"){setMode("cable:power");return;}
+  if(k==="n"){setMode("cable:data");return;}
+  if(k==="r"){rotateSel();return;}
+  if(k==="f"){fit();return;}
+  if(k==="a"){e.preventDefault();openMenu();return;}
+  for(const [type,t] of Object.entries(TYPES))if(k===t.key){setMode("place:"+type);return;}
+});
+document.addEventListener("keyup",e=>{if(e.key===" ")spaceDown=false;});
+
+/* start */
+S=load();saved=JSON.stringify(S);
+A=analyze(S);renderTools();renderWorld();renderOverlay();renderSide();renderResults();
+requestAnimationFrame(fit);
+window.addEventListener("resize",()=>{});
+}
+</script>
+</body>
+</html>
