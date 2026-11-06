@@ -34,7 +34,7 @@ The app is one `index.html` plus `default_parts.json`, the devices that ship wit
 | Action | How |
 | --- | --- |
 | Place a device | **Add device** (or press `A`), pick one, click the floor. `R` rotates. |
-| Draw a cable | `P` for power, `N` for network. Click a block's edge, click to bend, click another block's edge to finish. |
+| Draw a cable | `P` power, `N` network, `I` interlink, `S` signal. Click a block's edge, click to bend, click another block's edge to finish. |
 | Select | Click, Shift-click to add, or drag a box on empty floor. `Ctrl+A` selects all. |
 | Move | Drag any selected block; the selection moves together and cables re-route. |
 | Copy and paste | `Ctrl+C`, `Ctrl+V` (pastes at the cursor), `Ctrl+D` duplicates, `Ctrl+X` cuts. |
@@ -48,6 +48,9 @@ The app is one `index.html` plus `default_parts.json`, the devices that ship wit
 - **1 failed / 2 failed** are the worst case when that many of the rack's own PDUs go down. The chain's output is then re-shared between the racks still connected.
 - **Cooling**: each cooler splits its output evenly between the racks it reaches. An aisle cooler reaches racks in its row whose centre is within its reach (measured from the cooler's centre, across its short side). A room cooler, such as the Room CRAC, reaches racks whose centre is inside a square area centred on it (24 × 24 cells by default).
 - **Usable** is the lower of power and cooling.
+- **Network**: racks connect to switches with network cables. Each switch's bandwidth is split evenly between its racks, and no rack gets more than its own max (1 Tbps for now). Whatever a rack can't use goes to the others.
+- **Cluster Interlink**: switches connected to an interlink with interlink cables can lend spare bandwidth to each other's racks, up to the interlink's limit (3.2 Tbps). Switches can't be joined directly with network cables.
+- **Failover Controller**: connect it to two switches with signal cables. If one switch fails, its racks move to the other. **1 switch failed** is the worst case when any one switch goes down.
 
 ## Where data is stored
 
@@ -105,12 +108,14 @@ Open **Devices**, fill in the form, and choose what the device **works like**. T
 
 | `behavior` | What it does | `stats` (default) |
 | --- | --- | --- |
-| `rack` | Draws power from PDUs, gets cooling from coolers in reach | `maxPdus` (3) |
+| `rack` | Draws power from PDUs, gets cooling from coolers in reach and network from switches | `maxPdus` (3), `netGbps` (1000) |
 | `pdu` | Takes power from a UPS chain and passes it on to racks | `kW` (138) |
 | `ups` | Chains with other UPS units and feeds PDUs | `kW` (24), `chainMax` (4) |
 | `cooler` | Splits its cooling between racks within reach in its row | `kW` (40), `reach` (18) |
 | `roomcooler` | Splits its cooling between racks inside a square area centred on it | `kW` (35), `reach` (24, the square's width and height) |
-| `switch` | Takes network cables from racks and other switches | — |
+| `switch` | Splits its bandwidth evenly between the racks cabled to it | `Gbps` (6400) |
+| `interlink` | Joins switches with interlink cables so they share spare bandwidth | `Gbps` (3200) |
+| `failover` | Links two switches with signal cables; if one fails, its racks move to the other | — |
 | `none` | Takes up space only (walls, pillars, labels) | — |
 
 ## Extending in code

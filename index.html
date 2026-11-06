@@ -11,7 +11,7 @@
 :root{
   --bg:#dfe4e7; --panel:#f6f8f9; --ink:#15202b; --muted:#5d6b77; --line:#c8d0d6; --hover:#e6ebee;
   --floor:#e9eef0; --tile:#d6dde1; --tile-q:#e1e7ea; --void:#cfd6db;
-  --power:#d98a00; --data:#0a7ea4; --sel:#6741d9; --warn:#c92a2a; --ok:#2f8f46; --part:#c77700;
+  --power:#d98a00; --data:#0a7ea4; --interlink:#7048e8; --signal:#c2255c; --failover:#c2255c; --sel:#6741d9; --warn:#c92a2a; --ok:#2f8f46; --part:#c77700;
   --rack:#33424f; --rack-fill:#f3f5f7;
   --pdu:#b35c00; --pdu-fill:#fdf1e2;
   --ups:#2f7d43; --ups-fill:#e7f3ea;
@@ -27,7 +27,7 @@
   :root:not([data-theme="light"]){
     --bg:#0f1419; --panel:#161d24; --ink:#e4eaef; --muted:#93a1ad; --line:#2a343e; --hover:#202a33;
     --floor:#1a222a; --tile:#2a343e; --tile-q:#212a33; --void:#11171d;
-    --power:#f2a922; --data:#3cb4dc; --sel:#9b82f5; --warn:#ff6b6b; --ok:#5cc278; --part:#f0a33a;
+    --power:#f2a922; --data:#3cb4dc; --interlink:#a98bff; --signal:#f06595; --failover:#f06595; --sel:#9b82f5; --warn:#ff6b6b; --ok:#5cc278; --part:#f0a33a;
     --rack:#9fb0bf; --rack-fill:#1e2730;
     --pdu:#e08a2e; --pdu-fill:#2b2118;
     --ups:#55b56d; --ups-fill:#17271c;
@@ -40,7 +40,7 @@
 :root[data-theme="dark"]{
   --bg:#0f1419; --panel:#161d24; --ink:#e4eaef; --muted:#93a1ad; --line:#2a343e; --hover:#202a33;
   --floor:#1a222a; --tile:#2a343e; --tile-q:#212a33; --void:#11171d;
-  --power:#f2a922; --data:#3cb4dc; --sel:#9b82f5; --warn:#ff6b6b; --ok:#5cc278; --part:#f0a33a;
+  --power:#f2a922; --data:#3cb4dc; --interlink:#a98bff; --signal:#f06595; --failover:#f06595; --sel:#9b82f5; --warn:#ff6b6b; --ok:#5cc278; --part:#f0a33a;
   --rack:#9fb0bf; --rack-fill:#1e2730;
   --pdu:#e08a2e; --pdu-fill:#2b2118;
   --ups:#55b56d; --ups-fill:#17271c;
@@ -153,12 +153,16 @@ dialog h3{margin:0 0 8px;font-family:"Barlow Semi Condensed",sans-serif;font-siz
 .t-ups .body{fill:var(--ups-fill);stroke:var(--ups)} .t-ups .head{fill:var(--ups)}
 .t-cooler .body,.t-roomcooler .body{fill:var(--cooler-fill);stroke:var(--cooler)} .t-cooler .head,.t-roomcooler .head{fill:var(--cooler)}
 .t-switch .body{fill:var(--switch-fill);stroke:var(--switch)} .t-switch .head{fill:var(--switch)}
+.t-interlink .body{fill:var(--switch-fill);stroke:var(--interlink)} .t-interlink .head{fill:var(--interlink)}
+.t-failover .body{fill:var(--switch-fill);stroke:var(--failover)} .t-failover .head{fill:var(--failover)}
 .blk.badchain .body{stroke:var(--warn);stroke-width:2.5}
 .sdot{stroke:var(--head-ink);stroke-width:1}
 .sdot.st-ok{fill:var(--ok)}.sdot.st-part{fill:var(--part)}.sdot.st-none{fill:var(--warn)}.sdot.st-off{fill:var(--muted)}
 .cable{fill:none;stroke-width:2.5;stroke-linejoin:round;stroke-linecap:round}
 .cable.power{stroke:var(--power)}
 .cable.data{stroke:var(--data);stroke-width:2}
+.cable.interlink{stroke:var(--interlink);stroke-width:2.5}
+.cable.signal{stroke:var(--signal);stroke-width:1.6;stroke-dasharray:.35 .25}
 .cable.bad{stroke:var(--warn)}
 .cable.sel{stroke-width:5}
 .cable.dim{opacity:.18}
@@ -168,7 +172,7 @@ dialog h3{margin:0 0 8px;font-family:"Barlow Semi Condensed",sans-serif;font-siz
 .reach{fill:var(--cooler);fill-opacity:.1;stroke:var(--cooler);stroke-width:1.5;pointer-events:none}
 td .fd.c-none{color:var(--warn)}
 .end{fill:var(--panel);stroke-width:1.5}
-.end.power{stroke:var(--power)} .end.data{stroke:var(--data)}
+.end.power{stroke:var(--power)} .end.data{stroke:var(--data)} .end.interlink{stroke:var(--interlink)} .end.signal{stroke:var(--signal)}
 .end.loose{fill:var(--warn);stroke:var(--warn)}
 .ghost{fill:var(--sel);fill-opacity:.14;stroke:var(--sel);stroke-width:2}
 .ghost.bad{fill:var(--warn);stroke:var(--warn)}
@@ -177,7 +181,7 @@ td .fd.c-none{color:var(--warn)}
 .snap{fill:var(--sel)}
 .snap.free{fill:none;stroke:var(--sel);stroke-width:1.5}
 .draft{fill:none;stroke-width:2.5;stroke-linejoin:round;stroke-linecap:round}
-.draft.power{stroke:var(--power)} .draft.data{stroke:var(--data)}
+.draft.power{stroke:var(--power)} .draft.data{stroke:var(--data)} .draft.interlink{stroke:var(--interlink)} .draft.signal{stroke:var(--signal);stroke-dasharray:.35 .25}
 .draft.next{opacity:.5}
 
 @media (max-width:900px){
@@ -330,8 +334,8 @@ td .fd.c-none{color:var(--warn)}
      key       optional one-key shortcut
    ===================================================================== */
 const BEHAVIORS={
-  rack:  {label:"Rack",help:"Draws power from PDUs and gets cooling from coolers in reach.",
-          stats:{maxPdus:{label:"Most PDU feeds",def:3,min:1,step:1,int:true}}},
+  rack:  {label:"Rack",help:"Draws power from PDUs, gets cooling from coolers in reach and network from switches.",
+          stats:{maxPdus:{label:"Most PDU feeds",def:3,min:1,step:1,int:true},netGbps:{label:"Most network (Gbps)",def:1000,min:0,step:100}}},
   pdu:   {label:"PDU",help:"Takes power from a UPS chain and passes it on to racks.",
           stats:{kW:{label:"Capacity (kW)",def:138,min:0,step:1}}},
   ups:   {label:"UPS",help:"Joins other UPS units into a chain and feeds PDUs.",
@@ -340,11 +344,16 @@ const BEHAVIORS={
           stats:{kW:{label:"Cooling (kW)",def:40,min:0,step:1},reach:{label:"Reach each side (cells)",def:18,min:0,step:1}}},
   roomcooler:{label:"Room cooler",help:"Splits its cooling between the racks inside a square area centred on it.",
           stats:{kW:{label:"Cooling (kW)",def:35,min:0,step:1},reach:{label:"Area width and height (cells)",def:24,min:0,step:1}}},
-  switch:{label:"Network switch",help:"Takes network cables from racks and other switches.",stats:{}},
+  switch:{label:"Network switch",help:"Shares its bandwidth evenly between the racks cabled to it.",
+          stats:{Gbps:{label:"Bandwidth (Gbps)",def:6400,min:0,step:100}}},
+  interlink:{label:"Cluster interlink",help:"Joins network switches with interlink cables so they can share bandwidth, up to its own limit.",
+          stats:{Gbps:{label:"Bandwidth (Gbps)",def:3200,min:0,step:100}}},
+  failover:{label:"Failover controller",help:"Links two network switches with signal cables. If one fails, its racks move to the other.",stats:{}},
   none:  {label:"No function",help:"Takes up space only, for walls, pillars or labels.",stats:{}}
 };
 /* which behaviours a cable may join: names sorted alphabetically and joined with "-" */
-const RULES={power:["ups-ups","pdu-ups","pdu-rack"],data:["rack-switch","switch-switch"]};
+const RULES={power:["ups-ups","pdu-ups","pdu-rack"],data:["rack-switch"],interlink:["interlink-switch"],signal:["failover-switch"]};
+const KINDS={power:"Power",data:"Network",interlink:"Interlink",signal:"Signal"};
 /* the devices that ship with the planner are loaded from default_parts.json at start-up */
 const BUILTIN_DEVICES=[];
 const FORMAT="rack-power-layout",VERSION=4,PACK_FORMAT="rack-power-devices";
@@ -384,7 +393,9 @@ function checkDevice(d){
 }
 buildCatalog(null);
 const GW=512, GH=512, INF=1e9;
-const POWER_OK=new Set(RULES.power),DATA_OK=new Set(RULES.data);
+const POWER_OK=new Set(RULES.power),CABLE_OK=Object.fromEntries(Object.entries(RULES).map(([k,v])=>[k,new Set(v)]));
+/* bandwidth in Gbps as text: 400 Gbps, 3.2 Tbps */
+const fmtBw=v=>v>=1000-1e-6?`${+(v/1000).toFixed(2)} Tbps`:`${Math.round(v)} Gbps`;
 
 /* ================= geometry ================= */
 const q4=v=>Math.round(v*4)/4;
@@ -513,10 +524,10 @@ class Net{
 function natural(a,b){return a.localeCompare(b,undefined,{numeric:true});}
 function analyze(state){
   const B=new Map(state.blocks.map(b=>[b.id,b]));
-  const issues=[],power=[],bad=new Set();
+  const issues=[],power=[],links=[],bad=new Set();
   for(const c of state.cables){
     const a=c.a&&B.get(c.a.block),b=c.b&&B.get(c.b.block);
-    const label=c.kind==="power"?"Power cable":"Network cable";
+    const label=(KINDS[c.kind]||"Network")+" cable";
     if(!a||!b){const o=a||b;issues.push({sev:"warn",msg:`${label}${o?" from "+o.name:""} has a loose end`,cable:c.id});bad.add(c.id);continue;}
     if(a===b){issues.push({sev:"warn",msg:`${label} on ${a.name} loops back into itself`,cable:c.id});bad.add(c.id);continue;}
     const pair=[roleOf(a.type),roleOf(b.type)].sort().join("-");
@@ -526,12 +537,18 @@ function analyze(state){
       let msg;
       if(pair==="rack-ups")msg=`${of("ups").name} → ${of("rack").name}: a UPS has to feed a PDU before it reaches a rack`;
       else if(/none/.test(pair))msg=`${(roleOf(a.type)==="none"?a:b).name} doesn’t take cables`;
-      else if(/cooler|switch/.test(pair))msg=`${(/cooler|switch/.test(roleOf(a.type))?a:b).name} doesn’t need a power cable`;
+      else if(/cooler|switch|interlink|failover/.test(pair))msg=`${(/cooler|switch|interlink|failover/.test(roleOf(a.type))?a:b).name} doesn’t need a power cable`;
       else if(pair==="pdu-pdu")msg=`${a.name} ↔ ${b.name}: PDUs can’t be daisy-chained`;
       else msg=`Power cable ${a.name} ↔ ${b.name} isn’t a valid power path`;
       issues.push({sev:"err",msg,cable:c.id});bad.add(c.id);
     }else{
-      if(!DATA_OK.has(pair)){issues.push({sev:"warn",msg:`Network cable ${a.name} ↔ ${b.name}: network cables run between network switches and racks`,cable:c.id});bad.add(c.id);}
+      if(CABLE_OK[c.kind]&&CABLE_OK[c.kind].has(pair)){links.push({c,a,b,pair,kind:c.kind});continue;}
+      let msg;
+      if(c.kind==="interlink")msg=`Interlink cable ${a.name} ↔ ${b.name}: interlink cables run between a network switch and a cluster interlink`;
+      else if(c.kind==="signal")msg=`Signal cable ${a.name} ↔ ${b.name}: signal cables run between a network switch and a failover controller`;
+      else if(pair==="switch-switch")msg=`Network cable ${a.name} ↔ ${b.name}: switches join through a cluster interlink, with interlink cables`;
+      else msg=`Network cable ${a.name} ↔ ${b.name}: network cables run between racks and network switches`;
+      issues.push({sev:"warn",msg,cable:c.id});bad.add(c.id);
     }
   }
   /* UPS chains */
@@ -623,11 +640,69 @@ function analyze(state){
     if(!cs.length)issues.push({sev:"warn",msg:`${r.name} isn’t within reach of any cooler`});
   }
   for(const c of coolers)if(!covers.get(c.id).length)issues.push({sev:"info",msg:`${c.name} has no racks within its reach`});
+
+  /* network: switch bandwidth is shared evenly between racks (anything a rack can't use, up to its own max, goes to the others).
+     Switches joined through a cluster interlink can lend bandwidth to each other's racks, up to the interlink's limit.
+     A failover controller links two switches: if one fails, its racks are served by the other. */
+  const switches=state.blocks.filter(b=>roleOf(b.type)==="switch").sort((p,q)=>natural(p.name,q.name));
+  const ils=state.blocks.filter(b=>roleOf(b.type)==="interlink").sort((p,q)=>natural(p.name,q.name));
+  const fos=state.blocks.filter(b=>roleOf(b.type)==="failover").sort((p,q)=>natural(p.name,q.name));
+  const rackSw=new Map(racks.map(r=>[r.id,new Set()])),rackNet=new Map(racks.map(r=>[r.id,[]]));
+  const swRacks=new Map(switches.map(s=>[s.id,new Set()])),ilSw=new Map(ils.map(x=>[x.id,new Set()])),foSw=new Map(fos.map(x=>[x.id,new Set()]));
+  for(const l of links){
+    const of=t=>roleOf(l.a.type)===t?l.a:l.b;
+    if(l.kind==="data"){const r=of("rack"),s=of("switch");rackSw.get(r.id).add(s.id);swRacks.get(s.id).add(r.id);rackNet.get(r.id).push(l.c.id);}
+    else if(l.kind==="interlink")ilSw.get(of("interlink").id).add(of("switch").id);
+    else foSw.get(of("failover").id).add(of("switch").id);
+  }
+  const partners=new Map(switches.map(s=>[s.id,new Set()]));
+  for(const f of fos){const ss=[...foSw.get(f.id)];
+    if(ss.length===2){partners.get(ss[0]).add(ss[1]);partners.get(ss[1]).add(ss[0]);}
+    else issues.push({sev:"warn",msg:`${f.name} needs signal cables to exactly two network switches (it has ${ss.length})`});}
+  for(const x of ils)if(ilSw.get(x.id).size<2)issues.push({sev:"info",msg:`${x.name} needs interlink cables to at least two network switches`});
+  const netMax=r=>stat(r.type,"netGbps");
+  function netAlloc(failed){
+    const feeds=new Map(racks.map(r=>{const f=new Set();
+      for(const s of rackSw.get(r.id)){if(s!==failed)f.add(s);else for(const p of partners.get(s))if(p!==failed)f.add(p);}
+      return [r.id,f];}));
+    const build=caps=>{
+      const N=new Net(),src=N.node(),snk=N.node(),sn=new Map(),rn=new Map();
+      for(const s of switches)if(s.id!==failed){const n=N.node();sn.set(s.id,n);N.edge(src,n,stat(s.type,"Gbps"));}
+      for(const x of ils){const ss=[...ilSw.get(x.id)].filter(s=>sn.has(s));if(ss.length<2)continue;
+        const i=N.node(),o=N.node();N.edge(i,o,stat(x.type,"Gbps"));for(const s of ss){N.edge(sn.get(s),i,INF);N.edge(o,sn.get(s),INF);}}
+      for(const r of racks){const n=N.node();rn.set(r.id,n);N.edge(n,snk,caps.get(r.id)||0);for(const s of feeds.get(r.id))N.edge(sn.get(s),n,INF);}
+      return {N,src,snk,rn};
+    };
+    const out=new Map(),active=new Set();
+    for(const r of racks){if(feeds.get(r.id).size&&netMax(r)>0)active.add(r.id);else out.set(r.id,0);}
+    /* raise every unfrozen rack's share together; freeze the racks that can't get more; repeat */
+    for(let guard=0;active.size&&guard<200;guard++){
+      const capsAt=t=>{const m=new Map(out);for(const id of active)m.set(id,Math.min(t,netMax(B.get(id))));return m;};
+      const fits=t=>{const m=capsAt(t),g=build(m);let need=0;for(const v of m.values())need+=v;return g.N.flow(g.src,g.snk)>=need-1e-6;};
+      let lo=0,hi=Math.max(...[...active].map(id=>netMax(B.get(id))));
+      if(fits(hi))lo=hi;else for(let i=0;i<50;i++){const mid=(lo+hi)/2;if(fits(mid))lo=mid;else hi=mid;}
+      const g=build(capsAt(lo));g.N.flow(g.src,g.snk);
+      const seen=new Set([g.src]),qu=[g.src];
+      while(qu.length){const u=qu.pop();for(const e of g.N.adj[u]){const v=g.N.to[e];if(!seen.has(v)&&g.N.cap[e]>1e-6){seen.add(v);qu.push(v);}}}
+      let froze=0;
+      for(const id of [...active]){const mx=netMax(B.get(id));if(lo>=mx-1e-6||!seen.has(g.rn.get(id))){out.set(id,Math.min(lo,mx));active.delete(id);froze++;}}
+      if(!froze){for(const id of active)out.set(id,Math.min(lo,netMax(B.get(id))));break;}
+    }
+    return out;
+  }
+  const netBase=netAlloc(null),netFail=switches.map(s=>netAlloc(s.id));
+  for(const r of res){const rb=B.get(r.id);
+    r.Nmax=netMax(rb);r.switches=[...rackSw.get(r.id)].map(id=>B.get(id).name).sort(natural);
+    r.N=[netBase.get(r.id),netFail.reduce((m,o)=>Math.min(m,o.get(r.id)),netBase.get(r.id))];
+    rackNet.get(r.id).forEach(x=>r.path.add(x));
+    if(!r.switches.length)issues.push({sev:"info",msg:`${r.name} has no network cable to a switch`});
+  }
+  const net={swRacks,ilSw,foSw,partners};
   const sum=f=>res.reduce((a,r)=>a+f(r),0);
-  const totals={P:[0,1,2].map(i=>sum(r=>r.P[i])),C:sum(r=>r.C),U:[0,1,2].map(i=>sum(r=>r.U[i]))};
+  const totals={P:[0,1,2].map(i=>sum(r=>r.P[i])),C:sum(r=>r.C),U:[0,1,2].map(i=>sum(r=>r.U[i])),N:[0,1].map(i=>sum(r=>r.N[i]))};
   const sevOrder={err:0,warn:1,info:2};
   issues.sort((p,q)=>sevOrder[p.sev]-sevOrder[q.sev]);
-  return {chains,chainOf,racks:res,rackMap:new Map(res.map(r=>[r.id,r])),issues,bad,totalCap,pduChains,coolerCovers:covers,totals,pduLoad:base.load};
+  return {chains,chainOf,racks:res,rackMap:new Map(res.map(r=>[r.id,r])),issues,bad,totalCap,pduChains,coolerCovers:covers,totals,pduLoad:base.load,net};
 }
 function fmt(v){return (Math.round(v*10)/10).toFixed(1);}
 
@@ -655,7 +730,7 @@ function demoState(){
   wire("power",a2,"bottom",.25,r[2],"top",.75);wire("power",a2,"bottom",.75,r[3],"top",.25);
   wire("power",b1,"top",.25,r[0],"bottom",.75);wire("power",b1,"top",.75,r[1],"bottom",.25);
   wire("power",b2,"top",.25,r[2],"bottom",.75);wire("power",b2,"top",.75,r[3],"bottom",.25);
-  wire("data",sw,"bottom",.5,r[3],"top",.75);
+  for(let i=0;i<4;i++)wire("data",sw,"bottom",.2+.2*i,r[i],"top",.5);
   return st;
 }
 
@@ -685,7 +760,7 @@ function clean(st){
   for(const b of (st&&st.blocks)||[]){if(!TYPES[b.type])continue;o.blocks.push({id:String(b.id),type:b.type,x:+b.x,y:+b.y,w:+b.w,h:+b.h,name:String(b.name||b.type)});ids.add(String(b.id));}
   for(const c of (st&&st.cables)||[]){if(!Array.isArray(c.pts)||c.pts.length<2)continue;
     const at=x=>x&&ids.has(String(x.block))?{block:String(x.block),ox:+x.ox,oy:+x.oy}:null;
-    o.cables.push({id:String(c.id),kind:c.kind==="data"?"data":"power",pts:c.pts.map(p=>[+p[0],+p[1]]),a:at(c.a),b:at(c.b)});}
+    o.cables.push({id:String(c.id),kind:KINDS[c.kind]?c.kind:"power",pts:c.pts.map(p=>[+p[0],+p[1]]),a:at(c.a),b:at(c.b)});}
   for(const x of [...o.blocks,...o.cables]){const n=parseInt(String(x.id).replace(/\D/g,""),10);if(n>mx)mx=n;}
   o.seq=Math.max(mx+1,+(st&&st.seq)||1);
   const bm=new Map(o.blocks.map(b=>[b.id,b]));
@@ -715,17 +790,18 @@ function renderResults(){
   const el=document.getElementById("results");
   if(!A.racks.length){el.innerHTML=`<h2>Racks</h2><p class="note" style="margin:0">Place a rack from Add device, feed it from PDUs, and feed the PDUs from a UPS chain.</p>`;return;}
   const cur=hlSet(),k=(v,ref,first)=>`<td class="kw${first?" sep":""}${v<1e-6&&ref>1e-6?" c-none":""}">${fmt(v)}</td>`;
-  let h=`<h2>Racks <small>kW per rack, with power and cooling shared between racks</small></h2><table class="rt"><thead>
-    <tr><th rowspan="2">Rack</th><th rowspan="2" style="text-align:left">PDU feeds</th><th colspan="3" class="g sep">Power</th><th rowspan="2" class="g sep">Cooling</th><th colspan="3" class="g sep">Usable</th></tr>
-    <tr><th class="sep">0 failed</th><th>1 failed</th><th>2 failed</th><th class="sep">0 failed</th><th>1 failed</th><th>2 failed</th></tr></thead><tbody>`;
+  let h=`<h2>Racks <small>kW per rack, with power and cooling shared between racks, and network in Gbps</small></h2><table class="rt"><thead>
+    <tr><th rowspan="2">Rack</th><th rowspan="2" style="text-align:left">PDU feeds</th><th colspan="3" class="g sep">Power</th><th rowspan="2" class="g sep">Cooling</th><th colspan="3" class="g sep">Usable</th><th colspan="3" class="g sep">Network (Gbps)</th></tr>
+    <tr><th class="sep">0 failed</th><th>1 failed</th><th>2 failed</th><th class="sep">0 failed</th><th>1 failed</th><th>2 failed</th><th class="sep">Max</th><th>Split</th><th>1 switch failed</th></tr></thead><tbody>`;
+  const g=(v,ref,first)=>`<td class="kw${first?" sep":""}${v<0.5&&ref>0.5?" c-none":""}">${Math.round(v)}</td>`;
   for(const r of A.racks){
     h+=`<tr data-rack="${r.id}"${cur&&cur.id===r.id?' class="cur"':""}><td><div class="nm"><span class="dot st-${r.status}"></span>${esc(r.name)}</div><div class="fd">${esc(TYPES[r.type].label)}</div></td>
       <td class="fd">${r.feeds.length?r.feeds.map(f=>esc(f.name)+(f.chains.length?" ("+f.chains.join("+")+")":" (no UPS)")).join(", ")+` <span>· ${r.feeds.length}/${stat(r.type,"maxPdus")}</span>`:"No feed"}</td>
-      ${k(r.P[0],r.P[0],1)}${k(r.P[1],r.P[0])}${k(r.P[2],r.P[0])}${k(r.C,1,1)}${k(r.U[0],r.U[0],1)}${k(r.U[1],r.U[0])}${k(r.U[2],r.U[0])}</tr>`;
+      ${k(r.P[0],r.P[0],1)}${k(r.P[1],r.P[0])}${k(r.P[2],r.P[0])}${k(r.C,1,1)}${k(r.U[0],r.U[0],1)}${k(r.U[1],r.U[0])}${k(r.U[2],r.U[0])}${g(r.Nmax,0,1)}${g(r.N[0],r.Nmax)}${g(r.N[1],r.N[0])}</tr>`;
   }
   const T=A.totals;
-  h+=`</tbody><tfoot><tr><td>Total</td><td></td><td class="kw sep">${fmt(T.P[0])}</td><td class="kw">${fmt(T.P[1])}</td><td class="kw">${fmt(T.P[2])}</td><td class="kw sep">${fmt(T.C)}</td><td class="kw sep">${fmt(T.U[0])}</td><td class="kw">${fmt(T.U[1])}</td><td class="kw">${fmt(T.U[2])}</td></tr></tfoot></table>
-    <p class="note">Power is each rack’s share of the UPS chains feeding it. 1 and 2 failed are the worst case when that many of the rack’s own PDUs fail. Cooling is its share of the coolers in reach, each split evenly between its racks. Usable is the lower of power and cooling. Totals add up every rack’s own worst case, so they can be lower than any real single failure. <span class="dot st-ok"></span>no loss with 1 PDU down <span class="dot st-part"></span>reduced <span class="dot st-none"></span>nothing left <span class="dot st-off"></span>no power or cooling</p>`;
+  h+=`</tbody><tfoot><tr><td>Total</td><td></td><td class="kw sep">${fmt(T.P[0])}</td><td class="kw">${fmt(T.P[1])}</td><td class="kw">${fmt(T.P[2])}</td><td class="kw sep">${fmt(T.C)}</td><td class="kw sep">${fmt(T.U[0])}</td><td class="kw">${fmt(T.U[1])}</td><td class="kw">${fmt(T.U[2])}</td><td class="kw sep"></td><td class="kw">${Math.round(T.N[0])}</td><td class="kw">${Math.round(T.N[1])}</td></tr></tfoot></table>
+    <p class="note">Power is each rack’s share of the UPS chains feeding it. 1 and 2 failed are the worst case when that many of the rack’s own PDUs fail. Cooling is its share of the coolers in reach, each split evenly between its racks. Usable is the lower of power and cooling. Network is each rack’s split of its switches’ bandwidth, up to its max; 1 switch failed is the worst case when any one switch goes down. Totals add up every rack’s own worst case, so they can be lower than any real single failure. <span class="dot st-ok"></span>no loss with 1 PDU down <span class="dot st-part"></span>reduced <span class="dot st-none"></span>nothing left <span class="dot st-off"></span>no power or cooling</p>`;
   el.innerHTML=h;
 }
 function undo(){if(!hist.length)return;redoStack.push(saved);saved=hist.pop();S=JSON.parse(saved);drawing=null;persist();refresh();}
@@ -763,12 +839,14 @@ function blockSVG(b,hl){
   const T=TYPES[b.type],sl=selB(b.id),hb=Math.min(0.9,b.h*0.4),cx=b.x+b.w/2;
   let lines=[],extra="",cls="";
   if(roleOf(b.type)==="rack"){const r=A.rackMap.get(b.id);
-    lines=[[`Power ${r.P.map(v=>+fmt(v)).join(" · ")}`,"v"+(r.P[0]<1e-6?" neg":"")],[`Cooling ${+fmt(r.C)}`,"v"+(r.C<1e-6?" neg":"")],[`Usable ${r.U.map(v=>+fmt(v)).join(" · ")}`,"v"]];
+    lines=[[`Power ${r.P.map(v=>+fmt(v)).join(" · ")}`,"v"+(r.P[0]<1e-6?" neg":"")],[`Cooling ${+fmt(r.C)}`,"v"+(r.C<1e-6?" neg":"")],[`Usable ${r.U.map(v=>+fmt(v)).join(" · ")}`,"v"],[`Net ${Math.round(r.N[0])} · ${Math.round(r.N[1])} / ${Math.round(r.Nmax)}`,"v"+(r.N[0]<0.5?" neg":"")]];
     extra=`<circle class="sdot st-${r.status}" cx="${b.x+b.w-0.38}" cy="${b.y+hb/2}" r="0.15"/>`;}
   else if(roleOf(b.type)==="pdu"){const kw=stat(b.type,"kW");lines=[[`${+fmt(kw)} kW · ${Math.round(kw*1000/230)} A`,""]];}
   else if(roleOf(b.type)==="ups"){const ch=A.chainOf.get(b.id);lines=[[ch.name,"v"],[`${ch.size}/${ch.max} · ${+fmt(ch.cap)} kW`,ch.valid?"":"neg"]];if(!ch.valid)cls=" badchain";}
   else if(isCooler(b.type))lines=[[`${fmt(stat(b.type,"kW"))} kW`,"v"],["cooling",""]];
-  else if(roleOf(b.type)==="switch")lines=[["Network",""]];
+  else if(roleOf(b.type)==="switch"){const n=A.net.swRacks.get(b.id).size;lines=[[fmtBw(stat(b.type,"Gbps")),"v"],[`${n} rack${n===1?"":"s"}`,""]];}
+  else if(roleOf(b.type)==="interlink")lines=[[fmtBw(stat(b.type,"Gbps")),"v"],["interlink",""]];
+  else if(roleOf(b.type)==="failover")lines=[["failover",""]];
   if(T&&T.color)cls+=" cc";
   const fs=roleOf(b.type)==="rack"?(b.w<4&&b.h<4||Math.min(b.w,b.h)<4?0.32:0.38):b.w<=2?0.4:0.46;
   const by=b.y+hb,bh=b.h-hb,lh=fs*1.35,y0=by+bh/2-(lines.length-1)*lh/2;
@@ -833,7 +911,7 @@ function renderOverlay(){
 function renderHint(){
   let t;
   if(mode==="place")t=`Click to place a ${TYPES[placeType].label.toLowerCase()} (${placeRot?TYPES[placeType].h:TYPES[placeType].w}×${placeRot?TYPES[placeType].w:TYPES[placeType].h}). R rotates, Esc stops placing.`;
-  else if(mode==="cable")t=drawing?"Click to add a bend (0°, 45° or 90°, on the ¼ grid). Click another block’s edge to finish. Backspace removes a bend, Esc cancels.":`Click a block’s edge to start a ${cableKind==="power"?"power":"network"} cable.`;
+  else if(mode==="cable")t=drawing?"Click to add a bend (0°, 45° or 90°, on the ¼ grid). Click another block’s edge to finish. Backspace removes a bend, Esc cancels.":`Click a block’s edge to start ${cableKind==="interlink"?"an":"a"} ${(KINDS[cableKind]||"network").toLowerCase()} cable.`;
   else t="Drag on empty floor to select an area, Shift-click to add or remove. Drag a selected block to move the selection. Ctrl+C and Ctrl+V copy and paste. Right-drag or Space-drag to pan, scroll to zoom.";
   hintEl.innerHTML=`<span>${t}</span>`;
 }
@@ -843,6 +921,8 @@ function renderTools(){
   h+=`<button class="tb${mode==="place"?" on":""}" data-act="devmenu" title="Add device (A)" aria-haspopup="listbox" aria-expanded="${menuOpen()}">${mode==="place"?swatchHTML(placeType)+esc(TYPES[placeType].short):"Add device"}<span class="k">▾</span></button>`;
   h+=tool("cable:power","Power","P",`<span class="sw line" style="color:var(--power)"></span>`,mode==="cable"&&cableKind==="power");
   h+=tool("cable:data","Network","N",`<span class="sw line" style="color:var(--data)"></span>`,mode==="cable"&&cableKind==="data");
+  h+=tool("cable:interlink","Interlink","I",`<span class="sw line" style="color:var(--interlink)"></span>`,mode==="cable"&&cableKind==="interlink");
+  h+=tool("cable:signal","Signal","S",`<span class="sw line" style="color:var(--signal)"></span>`,mode==="cable"&&cableKind==="signal");
   toolsEl.innerHTML=h;
   document.querySelector('[data-act="undo"]').disabled=!hist.length;
   document.querySelector('[data-act="redo"]').disabled=!redoStack.length;
@@ -909,13 +989,18 @@ function renderSide(){
         <label for="pname">Name</label><input id="pname" data-name="${b.id}" value="${esc(b.name)}">
         <span class="muted">Position</span><span>${b.x}, ${b.y}</span></div>`;
       if(roleOf(b.type)==="rack"){const r=A.rackMap.get(b.id);
-        h+=`<p class="note">Fed by ${r.feeds.length?r.feeds.map(f=>`${esc(f.name)}${f.chains.length?" (chain "+f.chains.join(", ")+")":" (no UPS)"}`).join(" and "):"nothing yet"}. Power with 0, 1 or 2 of its PDUs failed: ${r.P.map(v=>fmt(v)).join(" / ")} kW.${r.coolShares.length?" Cooled by "+r.coolShares.map(s=>`${esc(s.name)} (${fmt(s.kw)} kW)`).join(" and ")+".":" No cooler reaches it."}</p>`;}
+        h+=`<p class="note">Fed by ${r.feeds.length?r.feeds.map(f=>`${esc(f.name)}${f.chains.length?" (chain "+f.chains.join(", ")+")":" (no UPS)"}`).join(" and "):"nothing yet"}. Power with 0, 1 or 2 of its PDUs failed: ${r.P.map(v=>fmt(v)).join(" / ")} kW.${r.coolShares.length?" Cooled by "+r.coolShares.map(s=>`${esc(s.name)} (${fmt(s.kw)} kW)`).join(" and ")+".":" No cooler reaches it."} Network: ${r.switches.length?`${fmtBw(r.N[0])} of its ${fmtBw(r.Nmax)} max from ${r.switches.map(esc).join(" and ")}, ${fmtBw(r.N[1])} if a switch fails`:"no network cable yet"}.</p>`;}
       if(isCooler(b.type)){const ids=A.coolerCovers.get(b.id)||[];h+=`<p class="note">Reaches ${ids.length} rack${ids.length===1?"":"s"}${ids.length?": "+ids.map(id=>esc(getB(id).name)).join(", ")+`, ${fmt(stat(b.type,"kW")/ids.length)} kW each`:""}. ${roleOf(b.type)==="roomcooler"?`The shaded square is its reach, ${stat(b.type,"reach")} × ${stat(b.type,"reach")} cells.`:`The shaded band is its reach, ${stat(b.type,"reach")} cells to each side.`}</p>`;}
       if(roleOf(b.type)==="ups"){const ch=A.chainOf.get(b.id);h+=`<p class="note">Part of ${ch.name}: ${ch.units.map(u=>esc(u.name)).join(", ")}.</p>`;}
+      const nm=ids=>[...ids].map(id=>esc(getB(id).name)).sort(natural).join(", ");
+      if(roleOf(b.type)==="switch"){const rs=A.net.swRacks.get(b.id),ps=A.net.partners.get(b.id),il=[...A.net.ilSw].filter(([,s])=>s.has(b.id)).map(([id])=>id);
+        h+=`<p class="note">${fmtBw(stat(b.type,"Gbps"))}, shared between ${rs.size} rack${rs.size===1?"":"s"}${rs.size?": "+nm(rs):""}.${il.length?` Joined through ${nm(il)}.`:""}${ps.size?` Fails over to ${nm(ps)}.`:" No failover partner."}</p>`;}
+      if(roleOf(b.type)==="interlink"){const ss=A.net.ilSw.get(b.id);h+=`<p class="note">Lets ${ss.size?nm(ss):"no switches yet"} share up to ${fmtBw(stat(b.type,"Gbps"))} with each other.</p>`;}
+      if(roleOf(b.type)==="failover"){const ss=A.net.foSw.get(b.id);h+=`<p class="note">${ss.size===2?`If ${nm(ss).replace(", "," or ")} fails, its racks move to the other.`:"Connect it to two network switches with signal cables."}</p>`;}
       h+=`<div class="btns"><button class="btn" data-act="rotate">Rotate</button><button class="btn danger" data-act="delete">Delete</button></div></section>`;
     }else{const c=getC(sel.id),a=c.a&&getB(c.a.block),b=c.b&&getB(c.b.block);
       h+=`<section><h2>Cable <small>${a?esc(a.name):"loose end"} to ${b?esc(b.name):"loose end"}</small></h2><div class="prop">
-        <label for="pkind">Type</label><select id="pkind" data-kind="${c.id}"><option value="power"${c.kind==="power"?" selected":""}>Power</option><option value="data"${c.kind==="data"?" selected":""}>Network</option></select></div>
+        <label for="pkind">Type</label><select id="pkind" data-kind="${c.id}">${Object.entries(KINDS).map(([k,l])=>`<option value="${k}"${c.kind===k?" selected":""}>${l}</option>`).join("")}</select></div>
         <div class="btns"><button class="btn danger" data-act="delete">Delete cable</button></div></section>`;
     }
   }
@@ -943,6 +1028,7 @@ function renderSide(){
     h+=`</div>`;
     const changed=S.overrides[T.id]&&Object.keys(S.overrides[T.id]).length;
     if(T.behavior==="ups")h+=`<p class="note">A full chain of ${stat(T.id,"chainMax")} gives ${fmt(stat(T.id,"chainMax")*stat(T.id,"kW"))} kW.</p>`;
+    if(T.behavior==="switch"||T.behavior==="interlink")h+=`<p class="note">${fmtBw(stat(T.id,"Gbps"))}.</p>`;
     if(T.behavior==="pdu")h+=`<p class="note">${fmt(stat(T.id,"kW"))} kW is ${Math.round(stat(T.id,"kW")*1000/230)} A at 230 V.</p>`;
     if(changed)h+=`<div class="btns"><button class="btn" data-act="resetrating">Reset ${esc(T.label)} to default</button></div>`;
   }
@@ -951,8 +1037,9 @@ function renderSide(){
     <p>Power flows UPS chain → PDU → rack. UPS units joined by power cables form one chain whose output is the sum of its units, up to the chain limit. A UPS can’t feed a rack directly; it has to go through a PDU.</p>
     <p>Each UPS chain’s output is divided evenly between the racks it reaches. A rack fed from one chain through two of its PDUs takes the same share as one fed through one. The 1 and 2 failed columns are the worst case when that many of the rack’s own PDUs fail; the chain’s output is then shared between the racks still connected. Each PDU passes at most its capacity; if its racks’ shares add up to more, they’re scaled down.</p>
     <p>Each cooler splits its cooling evenly between the racks in its row whose centre is within its reach (measured from the cooler’s centre, across its short side). A room cooler does the same for the racks whose centre is inside a square area centred on it. A rack’s cooling is the sum of its shares. Usable is the lower of power and cooling. Coolers and network switches don’t need power cables.</p>
+    <p>Network: each switch’s bandwidth is shared evenly between the racks cabled to it, and no rack gets more than its own max; what one rack can’t use goes to the others. Switches joined to a cluster interlink with interlink cables can lend spare bandwidth to each other’s racks, up to the interlink’s limit. A failover controller joined to two switches with signal cables moves a failed switch’s racks to the other one. 1 switch failed is the worst case when any one switch goes down.</p>
     <p>Cables attach where they touch a block’s edge, leave it straight out for at least ¼ cell, and run at 0°, 45° or 90° on a ¼-cell grid. Moving or rotating a block re-routes the cable ends that touch it.</p>
-    <p>Shortcuts: A add device, V select, Ctrl+A select all, Shift-click to add to a selection, Ctrl+C copy, Ctrl+X cut, Ctrl+V paste at the cursor, Ctrl+D duplicate, P power cable, N network cable, R rotate, Del delete, F fit, Ctrl+Z undo, space-drag to pan.</p>
+    <p>Shortcuts: A add device, V select, Ctrl+A select all, Shift-click to add to a selection, Ctrl+C copy, Ctrl+X cut, Ctrl+V paste at the cursor, Ctrl+D duplicate, P power cable, N network cable, I interlink cable, S signal cable, R rotate, Del delete, F fit, Ctrl+Z undo, space-drag to pan.</p>
   </details></section>`;
   side.innerHTML=h;
 }
@@ -1266,6 +1353,8 @@ document.addEventListener("keydown",e=>{
   if(k==="v"){setMode("select");return;}
   if(k==="p"){setMode("cable:power");return;}
   if(k==="n"){setMode("cable:data");return;}
+  if(k==="i"){setMode("cable:interlink");return;}
+  if(k==="s"){setMode("cable:signal");return;}
   if(k==="r"){rotateSel();return;}
   if(k==="f"){fit();return;}
   if(k==="a"){e.preventDefault();openMenu();return;}
