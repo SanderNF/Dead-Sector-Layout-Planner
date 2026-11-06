@@ -151,7 +151,7 @@ dialog h3{margin:0 0 8px;font-family:"Barlow Semi Condensed",sans-serif;font-siz
 .t-rack .body{fill:var(--rack-fill);stroke:var(--rack)} .t-rack .head{fill:var(--rack)}
 .t-pdu .body{fill:var(--pdu-fill);stroke:var(--pdu)} .t-pdu .head{fill:var(--pdu)}
 .t-ups .body{fill:var(--ups-fill);stroke:var(--ups)} .t-ups .head{fill:var(--ups)}
-.t-cooler .body{fill:var(--cooler-fill);stroke:var(--cooler)} .t-cooler .head{fill:var(--cooler)}
+.t-cooler .body,.t-roomcooler .body{fill:var(--cooler-fill);stroke:var(--cooler)} .t-cooler .head,.t-roomcooler .head{fill:var(--cooler)}
 .t-switch .body{fill:var(--switch-fill);stroke:var(--switch)} .t-switch .head{fill:var(--switch)}
 .blk.badchain .body{stroke:var(--warn);stroke-width:2.5}
 .sdot{stroke:var(--head-ink);stroke-width:1}
@@ -338,6 +338,8 @@ const BEHAVIORS={
           stats:{kW:{label:"Output per unit (kW)",def:24,min:0,step:1},chainMax:{label:"Most units in a chain",def:4,min:1,step:1,int:true}}},
   cooler:{label:"Cooler",help:"Splits its cooling between the racks within reach in its row.",
           stats:{kW:{label:"Cooling (kW)",def:40,min:0,step:1},reach:{label:"Reach each side (cells)",def:18,min:0,step:1}}},
+  roomcooler:{label:"Room cooler",help:"Splits its cooling between the racks inside a square area centred on it.",
+          stats:{kW:{label:"Cooling (kW)",def:35,min:0,step:1},reach:{label:"Area width and height (cells)",def:24,min:0,step:1}}},
   switch:{label:"Network switch",help:"Takes network cables from racks and other switches.",stats:{}},
   none:  {label:"No function",help:"Takes up space only, for walls, pillars or labels.",stats:{}}
 };
@@ -472,13 +474,17 @@ function reroute(pts,ns,ne,na,nb){
   return fixStubs(dedupe(out),na,nb);
 }
 const overlap=(a,b)=>a.x<b.x+b.w&&b.x<a.x+a.w&&a.y<b.y+b.h&&b.y<a.y+a.h;
+const isCooler=t=>{const r=roleOf(t);return r==="cooler"||r==="roomcooler";};
+/* room cooler reach: a square `range` cells wide and high, centred on the cooler; a rack counts if its centre is inside */
+const roomRect=(c,range)=>({x:c.x+c.w/2-range/2,y:c.y+c.h/2-range/2,w:range,h:range});
 /* twin cooler reach: `range` cells to each side (across its short side), measured from the cooler's centre, within its row */
 function inReach(c,r,range){
+  if(roleOf(c.type)==="roomcooler"){const z=roomRect(c,range),x=r.x+r.w/2,y=r.y+r.h/2,e=1e-6;return x>=z.x-e&&x<=z.x+z.w+e&&y>=z.y-e&&y<=z.y+z.h+e;}
   const half=range;
   if(c.w<=c.h){const cc=c.x+c.w/2,rc=r.x+r.w/2;return Math.abs(rc-cc)<=half+1e-6&&r.y<c.y+c.h&&c.y<r.y+r.h;}
   const cc=c.y+c.h/2,rc=r.y+r.h/2;return Math.abs(rc-cc)<=half+1e-6&&r.x<c.x+c.w&&c.x<r.x+r.w;
 }
-function reachRect(c,range){return c.w<=c.h?{x:c.x+c.w/2-range,y:c.y,w:range*2,h:c.h}:{x:c.x,y:c.y+c.h/2-range,w:c.w,h:range*2};}
+function reachRect(c,range,type){if(roleOf(type||c.type)==="roomcooler")return roomRect(c,range);return c.w<=c.h?{x:c.x+c.w/2-range,y:c.y,w:range*2,h:c.h}:{x:c.x,y:c.y+c.h/2-range,w:c.w,h:range*2};}
 
 /* ================= max-flow ================= */
 class Net{
@@ -604,7 +610,7 @@ function analyze(state){
     return {id:r.id,name:r.name,type:r.type,P:[P0,P1,P2],feeds,path};
   });
   /* cooling: each twin cooler's output is divided evenly between the racks it reaches */
-  const coolers=state.blocks.filter(b=>roleOf(b.type)==="cooler").sort((p,q)=>natural(p.name,q.name));
+  const coolers=state.blocks.filter(b=>isCooler(b.type)).sort((p,q)=>natural(p.name,q.name));
   const covers=new Map(coolers.map(c=>[c.id,racks.filter(r=>inReach(c,r,stat(c.type,"reach"))).map(r=>r.id)]));
   for(const r of res){
     const cs=coolers.filter(c=>covers.get(c.id).includes(r.id));
@@ -761,7 +767,7 @@ function blockSVG(b,hl){
     extra=`<circle class="sdot st-${r.status}" cx="${b.x+b.w-0.38}" cy="${b.y+hb/2}" r="0.15"/>`;}
   else if(roleOf(b.type)==="pdu"){const kw=stat(b.type,"kW");lines=[[`${+fmt(kw)} kW · ${Math.round(kw*1000/230)} A`,""]];}
   else if(roleOf(b.type)==="ups"){const ch=A.chainOf.get(b.id);lines=[[ch.name,"v"],[`${ch.size}/${ch.max} · ${+fmt(ch.cap)} kW`,ch.valid?"":"neg"]];if(!ch.valid)cls=" badchain";}
-  else if(roleOf(b.type)==="cooler")lines=[[`${fmt(stat(b.type,"kW"))} kW`,"v"],["cooling",""]];
+  else if(isCooler(b.type))lines=[[`${fmt(stat(b.type,"kW"))} kW`,"v"],["cooling",""]];
   else if(roleOf(b.type)==="switch")lines=[["Network",""]];
   if(T&&T.color)cls+=" cc";
   const fs=roleOf(b.type)==="rack"?(b.w<4&&b.h<4||Math.min(b.w,b.h)<4?0.32:0.38):b.w<=2?0.4:0.46;
@@ -788,7 +794,7 @@ function renderWorld(){
     h+="</g>";
   }
   const zones=new Set();
-  for(const id of selLists().blocks){const sb=getB(id);if(sb&&roleOf(sb.type)==="cooler")zones.add(sb.id);}
+  for(const id of selLists().blocks){const sb=getB(id);if(sb&&isCooler(sb.type))zones.add(sb.id);}
   if(hl)(A.rackMap.get(hl.id).coolerIds||[]).forEach(id=>zones.add(id));
   for(const id of zones){const cb=getB(id);if(!cb)continue;const z=reachRect(cb,stat(cb.type,"reach"));h+=`<rect class="reach" x="${z.x}" y="${z.y}" width="${z.w}" height="${z.h}"/>`;}
   for(const b of S.blocks)h+=blockSVG(b,hl);
@@ -807,7 +813,7 @@ function renderOverlay(){
   let h="";
   if(marq)h+=`<rect class="marq" x="${Math.min(marq.x0,marq.x1)}" y="${Math.min(marq.y0,marq.y1)}" width="${Math.abs(marq.x1-marq.x0)}" height="${Math.abs(marq.y1-marq.y0)}"/>`;
   if(hover&&mode==="place"){const g=ghost(hover);
-    if(roleOf(placeType)==="cooler"){const z=reachRect(g,stat(placeType,"reach"));h+=`<rect class="reach" x="${z.x}" y="${z.y}" width="${z.w}" height="${z.h}"/>`;}
+    if(isCooler(placeType)){const z=reachRect(g,stat(placeType,"reach"),placeType);h+=`<rect class="reach" x="${z.x}" y="${z.y}" width="${z.w}" height="${z.h}"/>`;}
     h+=`<rect class="ghost${g.ok?"":" bad"}" x="${g.x}" y="${g.y}" width="${g.w}" height="${g.h}" rx="0.12"/><text class="ghostlbl" x="${g.x+g.w/2}" y="${g.y+g.h/2}" font-size="0.45">${g.w}×${g.h}</text>`;}
   if(mode==="cable"){
     if(drawing)h+=`<path class="draft ${drawing.kind}" d="M${drawing.pts.map(p=>p.join(" ")).join(" L")}"/>`;
@@ -903,8 +909,8 @@ function renderSide(){
         <label for="pname">Name</label><input id="pname" data-name="${b.id}" value="${esc(b.name)}">
         <span class="muted">Position</span><span>${b.x}, ${b.y}</span></div>`;
       if(roleOf(b.type)==="rack"){const r=A.rackMap.get(b.id);
-        h+=`<p class="note">Fed by ${r.feeds.length?r.feeds.map(f=>`${esc(f.name)}${f.chains.length?" (chain "+f.chains.join(", ")+")":" (no UPS)"}`).join(" and "):"nothing yet"}. Power with 0, 1 or 2 of its PDUs failed: ${r.P.map(v=>fmt(v)).join(" / ")} kW.${r.coolShares.length?" Cooled by "+r.coolShares.map(s=>`${esc(s.name)} (${fmt(s.kw)} kW)`).join(" and ")+".":" No Twin Aisle Cooler reaches it."}</p>`;}
-      if(roleOf(b.type)==="cooler"){const ids=A.coolerCovers.get(b.id)||[];h+=`<p class="note">Reaches ${ids.length} rack${ids.length===1?"":"s"}${ids.length?": "+ids.map(id=>esc(getB(id).name)).join(", ")+`, ${fmt(stat(b.type,"kW")/ids.length)} kW each`:""}. The shaded band is its reach, ${stat(b.type,"reach")} cells to each side.</p>`;}
+        h+=`<p class="note">Fed by ${r.feeds.length?r.feeds.map(f=>`${esc(f.name)}${f.chains.length?" (chain "+f.chains.join(", ")+")":" (no UPS)"}`).join(" and "):"nothing yet"}. Power with 0, 1 or 2 of its PDUs failed: ${r.P.map(v=>fmt(v)).join(" / ")} kW.${r.coolShares.length?" Cooled by "+r.coolShares.map(s=>`${esc(s.name)} (${fmt(s.kw)} kW)`).join(" and ")+".":" No cooler reaches it."}</p>`;}
+      if(isCooler(b.type)){const ids=A.coolerCovers.get(b.id)||[];h+=`<p class="note">Reaches ${ids.length} rack${ids.length===1?"":"s"}${ids.length?": "+ids.map(id=>esc(getB(id).name)).join(", ")+`, ${fmt(stat(b.type,"kW")/ids.length)} kW each`:""}. ${roleOf(b.type)==="roomcooler"?`The shaded square is its reach, ${stat(b.type,"reach")} × ${stat(b.type,"reach")} cells.`:`The shaded band is its reach, ${stat(b.type,"reach")} cells to each side.`}</p>`;}
       if(roleOf(b.type)==="ups"){const ch=A.chainOf.get(b.id);h+=`<p class="note">Part of ${ch.name}: ${ch.units.map(u=>esc(u.name)).join(", ")}.</p>`;}
       h+=`<div class="btns"><button class="btn" data-act="rotate">Rotate</button><button class="btn danger" data-act="delete">Delete</button></div></section>`;
     }else{const c=getC(sel.id),a=c.a&&getB(c.a.block),b=c.b&&getB(c.b.block);
@@ -944,7 +950,7 @@ function renderSide(){
   h+=`<section><details><summary>How it’s calculated</summary>
     <p>Power flows UPS chain → PDU → rack. UPS units joined by power cables form one chain whose output is the sum of its units, up to the chain limit. A UPS can’t feed a rack directly; it has to go through a PDU.</p>
     <p>Each UPS chain’s output is divided evenly between the racks it reaches. A rack fed from one chain through two of its PDUs takes the same share as one fed through one. The 1 and 2 failed columns are the worst case when that many of the rack’s own PDUs fail; the chain’s output is then shared between the racks still connected. Each PDU passes at most its capacity; if its racks’ shares add up to more, they’re scaled down.</p>
-    <p>Each cooler splits its cooling evenly between the racks in its row whose centre is within its reach (measured from the cooler’s centre, across its short side). A rack’s cooling is the sum of its shares. Usable is the lower of power and cooling. Coolers and network switches don’t need power cables.</p>
+    <p>Each cooler splits its cooling evenly between the racks in its row whose centre is within its reach (measured from the cooler’s centre, across its short side). A room cooler does the same for the racks whose centre is inside a square area centred on it. A rack’s cooling is the sum of its shares. Usable is the lower of power and cooling. Coolers and network switches don’t need power cables.</p>
     <p>Cables attach where they touch a block’s edge, leave it straight out for at least ¼ cell, and run at 0°, 45° or 90° on a ¼-cell grid. Moving or rotating a block re-routes the cable ends that touch it.</p>
     <p>Shortcuts: A add device, V select, Ctrl+A select all, Shift-click to add to a selection, Ctrl+C copy, Ctrl+X cut, Ctrl+V paste at the cursor, Ctrl+D duplicate, P power cable, N network cable, R rotate, Del delete, F fit, Ctrl+Z undo, space-drag to pan.</p>
   </details></section>`;

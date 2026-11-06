@@ -46,7 +46,7 @@ The app is one `index.html` plus `default_parts.json`, the devices that ship wit
 - **Power** flows UPS chain → PDU → rack. UPS units joined by power cables form a chain whose output is the sum of its units, up to the chain limit. A UPS can't feed a rack directly.
 - Each chain's output is **split evenly** between the racks it reaches. Each PDU passes at most its capacity; if the shares through it add up to more, they're scaled down.
 - **1 failed / 2 failed** are the worst case when that many of the rack's own PDUs go down. The chain's output is then re-shared between the racks still connected.
-- **Cooling**: each cooler splits its output evenly between the racks in its row whose centre is within its reach (measured from the cooler's centre, across its short side).
+- **Cooling**: each cooler splits its output evenly between the racks it reaches. An aisle cooler reaches racks in its row whose centre is within its reach (measured from the cooler's centre, across its short side). A room cooler, such as the Room CRAC, reaches racks whose centre is inside a square area centred on it (24 × 24 cells by default).
 - **Usable** is the lower of power and cooling.
 
 ## Where data is stored
@@ -109,6 +109,7 @@ Open **Devices**, fill in the form, and choose what the device **works like**. T
 | `pdu` | Takes power from a UPS chain and passes it on to racks | `kW` (138) |
 | `ups` | Chains with other UPS units and feeds PDUs | `kW` (24), `chainMax` (4) |
 | `cooler` | Splits its cooling between racks within reach in its row | `kW` (40), `reach` (18) |
+| `roomcooler` | Splits its cooling between racks inside a square area centred on it | `kW` (35), `reach` (24, the square's width and height) |
 | `switch` | Takes network cables from racks and other switches | — |
 | `none` | Takes up space only (walls, pillars, labels) | — |
 
