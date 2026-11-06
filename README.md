@@ -27,7 +27,7 @@ The app is one `index.html` plus `default_parts.json`, the devices that ship wit
 2. Press `A` and place a few **racks**, a **PDU** and a **UPS**.
 3. Press `P` and draw power cables UPS → PDU → rack.
 4. Read each rack's power, cooling and usable capacity straight off the floor. Click a block to change its ratings in the side panel.
-5. Use **Import / export** to save a copy of your layout or share it with others.
+5. Use **Import / export** to save your layout as a `.json` file, or open one someone shared with you.
 
 ## Using it
 
@@ -54,7 +54,7 @@ The app is one `index.html` plus `default_parts.json`, the devices that ship wit
 
 ## Where data is stored
 
-Each player's layout is saved in their own browser (`localStorage`, key `rack-power-layout-v1`). Nothing is sent anywhere, and players can't see each other's layouts. Clearing site data deletes the layout, so use **Import / export** to back up or share one.
+Each player's layout is saved in their own browser (`localStorage`, key `rack-power-layout-v1`). Nothing is sent anywhere, and players can't see each other's layouts. Clearing site data deletes the layout, so use **Import / export** to back it up: **Save as file** downloads it as a `.json` file and **Open file…** loads one. You can also copy and paste the JSON.
 
 ### Layout format
 
@@ -77,7 +77,7 @@ Each player's layout is saved in their own browser (`localStorage`, key `rack-po
 
 ## Adding devices without code
 
-Open **Devices**, fill in the form, and choose what the device **works like**. To share devices, open **Share devices as a pack**, copy the JSON and post it. Others paste it and click **Import pasted pack**.
+Open **Devices**, fill in the form, and choose what the device **works like**. To share devices, open **Share devices as a pack** and use **Save pack as file**, or copy the JSON and post it. Others use **Import pack file…**, or paste it and click **Import pasted pack**.
 
 ### Device pack format
 

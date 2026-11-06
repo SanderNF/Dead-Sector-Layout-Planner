@@ -282,7 +282,7 @@ td .fd.c-none{color:var(--warn)}
   <details class="pack"><summary>Share devices as a pack</summary>
     <p class="note">Copy this pack to share your devices, or paste someone else’s pack and import it. A device with the same id as one you have replaces it.</p>
     <textarea id="packtext" spellcheck="false"></textarea>
-    <div class="btns"><button class="btn" id="packcopy" type="button">Copy pack</button><button class="btn" id="packload" type="button">Import pasted pack</button></div>
+    <div class="btns"><button class="btn" id="packcopy" type="button">Copy pack</button><button class="btn" id="packload" type="button">Import pasted pack</button><button class="btn" id="packsave" type="button">Save pack as file</button><button class="btn" id="packopen" type="button">Import pack file…</button></div>
   </details>
   <div class="btns" style="justify-content:flex-end"><button class="btn" id="libclose" type="button">Close</button></div>
 </dialog>
@@ -305,9 +305,11 @@ td .fd.c-none{color:var(--warn)}
 </style>
 <dialog id="io">
   <h3>Import / export layout</h3>
-  <p class="note" style="margin:0 0 8px">Copy this to save your layout elsewhere, or paste a layout and load it. It includes your own devices and rating changes.</p>
+  <p class="note" style="margin:0 0 8px">Save your layout as a .json file or copy it, and open a file or paste a layout to load it. It includes your own devices and rating changes.</p>
   <textarea id="iotext" spellcheck="false"></textarea>
   <div class="btns">
+    <button class="btn" id="iosave">Save as file</button>
+    <button class="btn" id="ioopen">Open file…</button>
     <button class="btn" id="iocopy">Copy</button>
     <button class="btn" id="ioload">Load pasted layout</button>
     <button class="btn" id="ioclose">Close</button>
@@ -1260,6 +1262,20 @@ side.addEventListener("change",e=>{
 document.getElementById("iocopy").onclick=async()=>{const ta=document.getElementById("iotext");try{await navigator.clipboard.writeText(ta.value);toast("Copied");}catch(e){ta.select();toast("Press Ctrl+C to copy");}};
 document.getElementById("ioload").onclick=()=>{try{const st=clean(JSON.parse(document.getElementById("iotext").value));S=st;sel=null;drawing=null;commit();document.getElementById("io").close();fit();toast("Layout loaded");}catch(e){toast("That isn’t a valid layout");}};
 document.getElementById("ioclose").onclick=()=>document.getElementById("io").close();
+/* .json files: save by downloading, open with a file picker */
+function saveFile(name,text){
+  const url=URL.createObjectURL(new Blob([text],{type:"application/json"}));
+  const a=document.createElement("a");a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+function openFile(then){
+  const inp=document.createElement("input");inp.type="file";inp.accept=".json,application/json";
+  inp.onchange=()=>{const f=inp.files&&inp.files[0];if(!f)return;f.text().then(then,()=>toast("Couldn’t read that file"));};
+  inp.click();
+}
+const stamp=()=>new Date().toISOString().slice(0,10);
+document.getElementById("iosave").onclick=()=>{saveFile(`dead-sector-layout-${stamp()}.json`,JSON.stringify(S,null,1));toast("Layout saved");};
+document.getElementById("ioopen").onclick=()=>openFile(t=>{document.getElementById("iotext").value=t;document.getElementById("ioload").onclick();});
 
 /* Device library */
 const lib=document.getElementById("lib"),$=id=>document.getElementById(id);
@@ -1333,6 +1349,8 @@ $("packload").onclick=()=>{
   toast(`Imported ${added} new and ${updated} updated device${added+updated===1?"":"s"}${errs.length?`. Skipped ${errs.length}: ${errs[0]}`:""}`);
 };
 $("libclose").onclick=()=>lib.close();
+$("packsave").onclick=()=>{if(!S.devices.length){toast("You have no devices of your own to save yet");return;}saveFile(`dead-sector-devices-${stamp()}.json`,packJSON());toast("Pack saved");};
+$("packopen").onclick=()=>openFile(t=>{$("packtext").value=t;$("packload").onclick();});
 
 /* keys */
 document.addEventListener("keydown",e=>{
