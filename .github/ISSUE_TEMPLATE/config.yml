@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Ask on Discord
+    url: https://discord.com/users/612612141924614144
+    about: Not sure if it's a bug, or want to check an idea first? Message me on Discord.
+  - name: Patch notes the stats are based on (v0.2.1)
+    url: https://store.steampowered.com/news/app/4736470/view/719046905302090028
+    about: Dead Sector Upcoming Patch v0.2.1 on Steam.

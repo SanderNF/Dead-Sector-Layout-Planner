@@ -6,7 +6,9 @@ A floor planner for building data centres in the game **Dead Sector**. Place rac
 
 The whole app is a single `index.html`: no install, no build step, no server, no account. Your layout stays in your own browser.
 
-> This is a fan-made tool and is not affiliated with the developers of Dead Sector. Device stats are taken from the game as best we can; if something is off, please [open an issue](../../issues) or see [CONTRIBUTING.md](CONTRIBUTING.md).
+**Game version:** device stats and mechanics are based on Dead Sector [Upcoming Patch v0.2.1](https://store.steampowered.com/news/app/4736470/view/719046905302090028).
+
+> This is a fan-made tool and is not affiliated with the developers of Dead Sector. If a number doesn't match the game, please [report a stat correction](../../issues/new/choose) or see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Contents
 

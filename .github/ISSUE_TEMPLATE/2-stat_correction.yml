@@ -1,0 +1,45 @@
+name: Stat correction
+description: A device rating or game mechanic in the planner doesn't match Dead Sector.
+title: "[Stats]: "
+labels: ["stats"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The planner's stats are currently based on [Upcoming Patch v0.2.1](https://store.steampowered.com/news/app/4736470/view/719046905302090028).
+  - type: input
+    id: device
+    attributes:
+      label: Device or mechanic
+      placeholder: e.g. PDU capacity, UPS chain limit, cooler reach, how power is shared
+    validations:
+      required: true
+  - type: input
+    id: current
+    attributes:
+      label: Value in the planner
+      placeholder: e.g. 138 kW
+    validations:
+      required: true
+  - type: input
+    id: correct
+    attributes:
+      label: Value in the game
+      placeholder: e.g. 150 kW
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Game version
+      description: Which patch did you see this in?
+      placeholder: e.g. v0.2.1
+    validations:
+      required: true
+  - type: textarea
+    id: source
+    attributes:
+      label: Source
+      description: How do you know? A screenshot, an in-game test, or a link to patch notes.
+    validations:
+      required: true

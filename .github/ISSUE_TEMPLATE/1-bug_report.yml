@@ -1,0 +1,38 @@
+name: Bug report
+description: Something in the planner doesn't work or behaves wrongly.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting! If a **number doesn't match the game**, use the *Stat correction* template instead.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, and what happened instead?
+      placeholder: |
+        1. Placed two UPS units and chained them
+        2. Connected a PDU and three racks
+        3. Expected each rack to get 16 kW, but ...
+    validations:
+      required: true
+  - type: textarea
+    id: layout
+    attributes:
+      label: Layout JSON
+      description: If you can, open **Import / export**, copy the layout and paste it here. It makes the bug much easier to reproduce.
+      render: json
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and version
+      placeholder: e.g. Chrome 131, Firefox 133, Safari 18
+    validations:
+      required: true
+  - type: textarea
+    id: extra
+    attributes:
+      label: Screenshots or console errors
+      description: Screenshots, or any errors from the browser console (F12 → Console).

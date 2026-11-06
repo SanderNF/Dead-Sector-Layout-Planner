@@ -10,9 +10,11 @@ Message me there for anything from "is this a bug?" to "would you take a PR for 
 
 ## Ways to contribute
 
+Each type below has an issue template that asks for the right details. Pick one when you [open an issue](../../issues/new/choose).
+
 ### Report a bug
 
-Open an issue and include:
+Open a **Bug report** and include:
 
 - What you did, what you expected, and what happened instead.
 - Your browser and version.
@@ -20,20 +22,20 @@ Open an issue and include:
 
 ### Correct game stats or mechanics
 
-The planner is only useful if its numbers match the game. If a device rating, chain limit, cooling reach or power-sharing rule is wrong:
+The planner is only useful if its numbers match the game. Stats are currently based on [Upcoming Patch v0.2.1](https://store.steampowered.com/news/app/4736470/view/719046905302090028). If a device rating, chain limit, cooling reach or power-sharing rule is wrong, or a newer patch changes it:
 
-- Open an issue (or message me) with the correct value and where it comes from: a screenshot, an in-game test, or a patch note.
+- Open a **Stat correction** (or message me) with the correct value and where it comes from: a screenshot, an in-game test, or a patch note.
 - Mention the game version or patch if you know it, since stats can change between updates.
 
 ### Suggest or add a device
 
-The quickest way is to build it in the planner itself: open **Devices**, create it, then **Share devices as a pack** and paste the JSON into an issue. See [Adding devices without code](README.md#adding-devices-without-code) for the format.
+The quickest way is to build it in the planner itself: open **Devices**, create it, then **Share devices as a pack** and paste the JSON into a **New device** issue. See [Adding devices without code](README.md#adding-devices-without-code) for the format.
 
 If it should ship as a built-in device, you can also add it to `BUILTIN_DEVICES` yourself in a pull request (see below).
 
 ### Request a feature
 
-Open an issue describing what you want to do in the planner and why. Describing the problem you're solving matters more than a specific solution.
+Open a **Feature request** describing what you want to do in the planner and why. Describing the problem you're solving matters more than a specific solution.
 
 ## Working on the code
 

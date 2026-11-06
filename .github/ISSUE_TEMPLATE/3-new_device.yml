@@ -1,0 +1,51 @@
+name: New device
+description: Suggest a device from the game that the planner is missing.
+title: "[Device]: "
+labels: ["device"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Easiest way: open **Devices** in the planner, create the device, then **Share devices as a pack** and paste the JSON below.
+  - type: input
+    id: name
+    attributes:
+      label: Device name
+      placeholder: e.g. Small UPS
+    validations:
+      required: true
+  - type: dropdown
+    id: behavior
+    attributes:
+      label: Works like
+      options:
+        - rack
+        - pdu
+        - ups
+        - cooler
+        - switch
+        - none (takes up space only)
+        - Something new (describe below)
+    validations:
+      required: true
+  - type: textarea
+    id: pack
+    attributes:
+      label: Device pack JSON
+      description: From **Share devices as a pack**. Leave empty if you'd rather describe it below.
+      render: json
+  - type: textarea
+    id: details
+    attributes:
+      label: Size and stats
+      description: Size in grid cells, ratings (kW, chain limit, reach, ...), and anything special about how it works.
+  - type: input
+    id: version
+    attributes:
+      label: Game version
+      placeholder: e.g. v0.2.1
+  - type: textarea
+    id: source
+    attributes:
+      label: Source
+      description: A screenshot or link showing the device in the game.
