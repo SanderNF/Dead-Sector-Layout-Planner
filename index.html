@@ -60,6 +60,7 @@ header{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:8px 12px;b
 .grp{display:flex;gap:2px;padding:2px;border:1px solid var(--line);border-radius:9px;background:var(--bg)}
 .tb{appearance:none;border:0;background:transparent;padding:6px 9px;border-radius:7px;display:flex;align-items:center;gap:7px;cursor:pointer;white-space:nowrap;font-family:"Barlow Semi Condensed",sans-serif;font-weight:500;font-size:15px}
 .tb:hover{background:var(--hover)}
+a.tb{color:inherit;text-decoration:none}
 .tb.on{background:var(--ink);color:var(--panel)}
 .tb:disabled{opacity:.4;cursor:default}
 .tb .k{font-size:12px;opacity:.55}
@@ -213,6 +214,9 @@ td .fd.c-none{color:var(--warn)}
       <button class="tb" data-act="clear">Clear</button>
       <button class="tb" data-act="io">Import / export</button>
     </div>
+    <div class="grp">
+      <a class="tb" href="https://github.com/SanderNF/Dead-Sector-Layout-Planner" target="_blank" rel="noopener" title="Source code, issues and contributing">GitHub</a>
+    </div>
   </header>
   <div class="main">
     <div class="work">
@@ -339,16 +343,10 @@ const BEHAVIORS={
 };
 /* which behaviours a cable may join: names sorted alphabetically and joined with "-" */
 const RULES={power:["ups-ups","pdu-ups","pdu-rack"],data:["rack-switch","switch-switch"]};
-const BUILTIN_DEVICES=[
-  {id:"rack",  label:"AI rack",               short:"AI rack",     cat:"Compute",prefix:"R",  w:4,h:5,behavior:"rack",  stats:{maxPdus:3},         key:"1"},
-  {id:"rack3", label:"Rack",                  short:"Rack",        cat:"Compute",prefix:"SR", w:3,h:5,behavior:"rack",  stats:{maxPdus:3},         key:"6"},
-  {id:"pdu",   label:"PDU",                   short:"PDU",         cat:"Power",  prefix:"PDU",w:3,h:2,behavior:"pdu",   stats:{kW:138},            key:"2"},
-  {id:"ups",   label:"Large UPS",             short:"Large UPS",   cat:"Power",  prefix:"UPS",w:3,h:3,behavior:"ups",   stats:{kW:24,chainMax:4},  key:"3"},
-  {id:"cooler",label:"Twin Aisle Cooler",     short:"Aisle Cooler",cat:"Cooling",prefix:"CL", w:2,h:4,behavior:"cooler",stats:{kW:40,reach:18},    key:"4"},
-  {id:"switch",label:"Hyperscale Core Switch",short:"Core Switch", cat:"Network",prefix:"SW", w:3,h:3,behavior:"switch",stats:{},                 key:"5"}
-];
+/* the devices that ship with the planner are loaded from default_parts.json at start-up */
+const BUILTIN_DEVICES=[];
 const FORMAT="rack-power-layout",VERSION=4,PACK_FORMAT="rack-power-devices";
-const BUILTIN_IDS=new Set(BUILTIN_DEVICES.map(d=>d.id));
+const BUILTIN_IDS=new Set();
 let TYPES={};
 const roleOf=t=>(TYPES[t]&&TYPES[t].behavior)||t;
 /* a device type’s stat, after the layout’s rating changes */
@@ -1269,10 +1267,24 @@ document.addEventListener("keydown",e=>{
 });
 document.addEventListener("keyup",e=>{if(e.key===" ")spaceDown=false;});
 
-/* start */
-S=load();saved=JSON.stringify(S);
-A=analyze(S);renderTools();renderWorld();renderOverlay();renderSide();renderResults();
-requestAnimationFrame(fit);
+/* start: load the default parts, then the saved layout */
+function start(){
+  S=load();saved=JSON.stringify(S);
+  A=analyze(S);renderTools();renderWorld();renderOverlay();renderSide();renderResults();
+  requestAnimationFrame(fit);
+}
+fetch("default_parts.json",{cache:"no-cache"}).then(r=>{if(!r.ok)throw new Error(r.status+" "+r.statusText);return r.json();}).then(pack=>{
+  if(!pack||pack.format!==PACK_FORMAT||!Array.isArray(pack.devices))throw new Error("not a device pack");
+  for(const d of pack.devices){const v=checkDevice(d);if(BUILTIN_IDS.has(v.id))continue;if(d.key)v.key=String(d.key).slice(0,1).toLowerCase();BUILTIN_DEVICES.push(v);BUILTIN_IDS.add(v.id);}
+  buildCatalog(null);start();
+}).catch(err=>{
+  /* don't start without the default parts: saved layouts that use them would lose those blocks */
+  document.querySelector(".main").innerHTML=`<div style="margin:auto;max-width:520px;padding:24px;line-height:1.5">
+    <h2>Couldn’t load the default parts</h2>
+    <p>The planner needs <code>default_parts.json</code> next to <code>index.html</code> (${esc(String(err&&err.message||err))}).</p>
+    <p>Browsers block this when <code>index.html</code> is opened straight from disk. Use the <a href="https://sandernf.github.io/Dead-Sector-Layout-Planner/">online planner</a>, or run a local server in the folder, for example <code>python3 -m http.server</code>, and open <a href="http://localhost:8000/">http://localhost:8000/</a>.</p>
+  </div>`;
+});
 window.addEventListener("resize",()=>{});
 }
 </script>

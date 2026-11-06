@@ -4,7 +4,7 @@ A floor planner for building data centres in the game **Dead Sector**. Place rac
 
 **Open the planner:** https://sandernf.github.io/Dead-Sector-Layout-Planner/
 
-The whole app is a single `index.html`: no install, no build step, no server, no account. Your layout stays in your own browser.
+The app is one `index.html` plus `default_parts.json`, the devices that ship with it. There's no install, no build step and no account, and your layout stays in your own browser.
 
 **Game version:** device stats and mechanics are based on Dead Sector [Upcoming Patch v0.2.1](https://store.steampowered.com/news/app/4736470/view/719046905302090028).
 
@@ -23,7 +23,7 @@ The whole app is a single `index.html`: no install, no build step, no server, no
 
 ## Quick start
 
-1. Open the planner (link above), or download `index.html` and open it in any modern browser.
+1. Open the planner (link above). To run it yourself, see [Running it locally](#running-it-locally).
 2. Press `A` and place a few **racks**, a **PDU** and a **UPS**.
 3. Press `P` and draw power cables UPS → PDU → rack.
 4. Read each rack's power, cooling and usable capacity straight off the floor. Click a block to change its ratings in the side panel.
@@ -85,7 +85,7 @@ Open **Devices**, fill in the form, and choose what the device **works like**. T
   "devices": [
     { "id": "small_ups", "label": "Small UPS", "short": "Small UPS", "cat": "Power",
       "prefix": "SU", "w": 2, "h": 2, "behavior": "ups",
-      "stats": { "kW": 12, "chainMax": 6 }, "color": "#2f7d43" }
+      "stats": { "kW": 6, "chainMax": 4 }, "color": "#2f7d43" }
   ]
 }
 ```
@@ -114,9 +114,10 @@ Open **Devices**, fill in the form, and choose what the device **works like**. T
 
 ## Extending in code
 
-Everything lives in the `<script>` at the bottom of `index.html`. The parts you'll touch are at the top, under **DEVICE CATALOG**:
+The devices that ship with the planner are in **`default_parts.json`**, in the same format as a [device pack](#device-pack-format), plus an optional one-key shortcut `key`. Add an entry there to add a built-in device; no code change needed.
 
-- **`BUILTIN_DEVICES`** — the devices that ship with the planner. Add an entry to add a built-in device.
+The code lives in the `<script>` at the bottom of `index.html`. The parts you'll touch are at the top, under **DEVICE CATALOG**:
+
 - **`BEHAVIORS`** — each behaviour's name, help text and stats (with defaults, minimums and labels). The side panel and the device form are generated from this.
 - **`RULES`** — which behaviours a power or network cable may connect, as alphabetically sorted pairs joined by `-` (for example `pdu-rack`).
 
@@ -124,13 +125,21 @@ A brand-new behaviour (not just a variant of an existing one) also needs handlin
 
 If you change the saved layout shape, bump `VERSION` and upgrade older layouts in `clean()` so existing saves keep working.
 
-Test changes by opening `index.html` directly in a browser; no server is needed.
+### Running it locally
+
+Browsers won't let a page opened straight from disk (`file://`) read `default_parts.json`, so serve the folder instead:
+
+```sh
+python3 -m http.server
+```
+
+Then open http://localhost:8000/ and reload after each change.
 
 ## Hosting your own copy
 
 Forks can be served for free with GitHub Pages:
 
-1. Push `index.html`, `README.md` and `.nojekyll` to the default branch.
+1. Push `index.html`, `default_parts.json` and `.nojekyll` to the default branch.
 2. In the repo, go to **Settings → Pages**.
 3. Under **Build and deployment**, choose **Deploy from a branch**, pick the branch and `/ (root)`, and save.
 

@@ -31,7 +31,7 @@ The planner is only useful if its numbers match the game. Stats are currently ba
 
 The quickest way is to build it in the planner itself: open **Devices**, create it, then **Share devices as a pack** and paste the JSON into a **New device** issue. See [Adding devices without code](README.md#adding-devices-without-code) for the format.
 
-If it should ship as a built-in device, you can also add it to `BUILTIN_DEVICES` yourself in a pull request (see below).
+If it should ship as a built-in device, you can also add it to `default_parts.json` yourself in a pull request (see below). That file uses the same pack format, so no code changes are needed.
 
 ### Request a feature
 
@@ -39,7 +39,7 @@ Open a **Feature request** describing what you want to do in the planner and why
 
 ## Working on the code
 
-The whole app is a single file, `index.html`, with plain HTML, CSS and JavaScript. There are no dependencies, no build step and no test runner.
+The app is `index.html` (plain HTML, CSS and JavaScript) plus `default_parts.json` (the built-in devices). There are no dependencies, no build step and no test runner.
 
 ### Setup
 
@@ -48,15 +48,21 @@ git clone https://github.com/SanderNF/Dead-Sector-Layout-Planner.git
 cd Dead-Sector-Layout-Planner
 ```
 
-Then open `index.html` in your browser. After each change, reload the page.
+Browsers block `default_parts.json` when `index.html` is opened straight from disk, so serve the folder:
+
+```sh
+python3 -m http.server
+```
+
+Then open http://localhost:8000/. After each change, reload the page.
 
 ### Where things live
 
-All the code is in the `<script>` at the bottom of `index.html`. The README's [Extending in code](README.md#extending-in-code) section is the map. In short:
+All the code is in the `<script>` at the bottom of `index.html`; the built-in devices are in `default_parts.json`. The README's [Extending in code](README.md#extending-in-code) section is the map. In short:
 
 | What you want to change | Where |
 | --- | --- |
-| Built-in devices | `BUILTIN_DEVICES` |
+| Built-in devices | `default_parts.json` |
 | A behaviour's stats, defaults or help text | `BEHAVIORS` |
 | Which devices a cable may connect | `RULES` |
 | Power and cooling maths | `analyze()` |
@@ -65,7 +71,7 @@ All the code is in the `<script>` at the bottom of `index.html`. The README's [E
 
 ### Ground rules
 
-- **Keep it a single file with no build step.** Anyone should be able to download `index.html` and open it. Avoid adding external libraries or CDN scripts unless we've talked about it first.
+- **Keep it simple, with no build step.** The app should stay `index.html` plus `default_parts.json`. Avoid adding external libraries or CDN scripts unless we've talked about it first.
 - **Don't break people's saved layouts.** Layouts live in players' browsers, so a change to the saved shape must bump `VERSION` and upgrade older layouts in `clean()`. Never rename an existing device `id`; layouts refer to it.
 - **Keep data local.** The planner doesn't send anything anywhere, and it should stay that way.
 - **Match the existing style.** Follow the formatting and naming around the code you're changing, and keep changes focused: one fix or feature per pull request.
